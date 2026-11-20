@@ -1,0 +1,620 @@
+
+<div class="tab-pane active customFade in billList" role="tabpanel" aria-label="Bills Tab">
+    <!-- DEVS - use tableToggle functionality similar to Legislator's sponsored & unsponsored bills -->
+    <div class="tableToggle">
+        <a onclick="return reloadAjaxContent(null, null, true);" class="" aria-label="Display bills currently in committee">Currently In Committee</a>
+        <span>&nbsp;|&nbsp;</span>
+        <a onclick="return reloadAjaxContent(null, null, false);" class="current" aria-label="Display bills reported out of committee">Reported Out Of Committee</a>
+    </div>
+
+    <div id="searchResults">
+        <div class="row">
+            <div class="form-group col-xs-12 col-md-5">
+                <label for="searchTerms">Search by bill number</label>
+                <input value="" type="text" id="searchTerms" class="form-control" />
+            </div>
+            <div class="col-xs-12 col-md-3">
+                <button type="button" class="btn btn-primary inlineSearchButton" onclick="return reloadAjaxContent(1);" aria-label="Bill Search">Search Bills</button>
+            </div>
+        </div>
+        <hr />
+            <!-- Display Bills currently in committee if tableToggle selects bills currentently in committee -->
+                    <div class="row">
+                        <div class="col-xs-12 col-md-6">
+                            <div class="searchResultSummary">Displaying 826 to 846 of 846 Bills</div>
+                        </div>
+                        <div class="col-xs-12 col-md-6 paginationContainer">
+        <nav aria-label="Results pages">
+            <ul class="pagination pagination-sm">
+                <li class="">
+                    <a href="javascript:void(0);" onclick="return reloadAjaxContent(1);" aria-disabled="false">
+                        <span class="">&laquo;</span><span class="sr-only"> First page</span>
+                    </a>
+                </li>
+                <li class="">
+                    <a href="javascript:void(0);" onclick="return reloadAjaxContent(33);" aria-disabled="false">
+                        <span class="">&lsaquo;</span><span class="sr-only"> Previous page</span>
+                    </a>
+                </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(30);">
+                                <span class="sr-only">Page </span>30
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(31);">
+                                <span class="sr-only">Page </span>31
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(32);">
+                                <span class="sr-only">Page </span>32
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(33);">
+                                <span class="sr-only">Page </span>33
+                            </a>
+                        </li>
+                        <li class="active">
+                            <span aria-current="page"><span class="sr-only">Page </span>34</span>
+                        </li>
+                <li class="disabled">
+                    <a href="javascript:void(0)" onclick="" aria-disabled="true">
+                        <span class="icon-white">&rsaquo;</span><span class="sr-only"> Next page</span>
+                    </a>
+                </li>
+                <li class="disabled">
+                    <a href="javascript:void(0)" onclick="" aria-disabled="true">
+                        <span class="icon-white">&raquo;</span><span class="sr-only"> Last page</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+</div>
+                    </div>
+                    <!-- Display Bills reported out of committee if tableToggle selects bills reported out of committee -->
+                    <table class="table table-condensed table-dark table-striped committeeBillsTable">
+                        <caption class="sr-only">Committee Bills</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class='sr-only'>Follow In My Legislature</span></th>
+                                
+<th scope="col" aria-sort="ascending" class="sortCol " data-managedproperty="EntityNumber" data-sortdirection = "asc">
+    <button>
+        Bill No.
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                fa-sort-up
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                <th scope="col" class="titleCol">Bill Title</th>
+                                
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="SponsorName" data-sortdirection = "">
+    <button>
+        Sponsor
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="ReportingType" data-sortdirection = "">
+    <button>
+        Report Type
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to the punishment of organized retail crimes" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H4996">H.4996&nbsp;</a></td>
+                                    <td>An Act relative to the punishment of organized retail crimes</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1644">H.1644</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to accomplice and joint venture criminal liability" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H4997">H.4997&nbsp;</a></td>
+                                    <td>An Act relative to accomplice and joint venture criminal liability</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1928">H.1928</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to offenses while driving on a non-administrative license suspension" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H4998">H.4998&nbsp;</a></td>
+                                    <td>An Act relative to offenses while driving on a non-administrative license suspension</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1936">H.1936</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to protect victims of stalking in violation of harassment prevention orders" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H4999">H.4999&nbsp;</a></td>
+                                    <td>An Act to protect victims of stalking in violation of harassment prevention orders</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H2041">H.2041</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to further clear titles to real property affected by technical irregularities in recorded instruments" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5030">H.5030&nbsp;</a></td>
+                                    <td>An Act to further clear titles to real property affected by technical irregularities in recorded instruments</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1898">H.1898</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to housing court jurisdiction" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5031">H.5031&nbsp;</a></td>
+                                    <td>An Act relative to housing court jurisdiction</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1941">H.1941</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act providing for equity within the Judicial Branch" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5055">H.5055&nbsp;</a></td>
+                                    <td>An Act providing for equity within the Judicial Branch</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1603">H.1603</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to modify the rules for taking depositions outside the Commonwealth and to adopt the uniform interstate depositions and discovery act" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5056">H.5056&nbsp;</a></td>
+                                    <td>An Act to modify the rules for taking depositions outside the Commonwealth and to adopt the uniform interstate depositions and discovery act</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1646">H.1646</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act requiring the relocation of the Cambridge District Court" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5057">H.5057&nbsp;</a></td>
+                                    <td>An Act requiring the relocation of the Cambridge District Court</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1651">H.1651</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act designating the Charlestown division of Boston Municipal Court as the George Lewis Ruffin Courthouse" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5058">H.5058&nbsp;</a></td>
+                                    <td>An Act designating the Charlestown division of Boston Municipal Court as the George Lewis Ruffin Courthouse</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1761">H.1761</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to judicial security" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5059">H.5059&nbsp;</a></td>
+                                    <td>An Act relative to judicial security</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1766">H.1766</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to equitable court staffing" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5060">H.5060&nbsp;</a></td>
+                                    <td>An Act relative to equitable court staffing</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1890">H.1890</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to advertising for justices of the peace " aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5061">H.5061&nbsp;</a></td>
+                                    <td>An Act relative to advertising for justices of the peace </td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1958">H.1958</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act concerning equitable allocation of recovery proceeds for subrogation claims" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5062">H.5062&nbsp;</a></td>
+                                    <td>An Act concerning equitable allocation of recovery proceeds for subrogation claims</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1966">H.1966</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to designate the courthouse in the Roxbury section of the city of Boston as the Edward O. Gourdin Courthouse" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5063">H.5063&nbsp;</a></td>
+                                    <td>An Act to designate the courthouse in the Roxbury section of the city of Boston as the Edward O. Gourdin Courthouse</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H2016">H.2016</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act limiting the use of prison labor" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5125">H.5125&nbsp;</a></td>
+                                    <td>An Act limiting the use of prison labor</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1597">H.1597</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to treatment, not incarceration" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5126">H.5126&nbsp;</a></td>
+                                    <td>An Act relative to treatment, not incarceration</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1913">H.1913</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to kratom" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5127">H.5127&nbsp;</a></td>
+                                    <td>An Act relative to kratom</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H2454">H.2454</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Study Order" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5146">H.5146&nbsp;</a></td>
+                                    <td>Study Order</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span data-toggle="popover" data-content="Bills: &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H516&quot;&gt;H.516&lt;/a&gt;">
+                                                        Study <span class="fa fa-list"></span>
+                                                    </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act exonerating certain individuals accused of witchcraft in colonial Massachusetts" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5154">H.5154&nbsp;</a></td>
+                                    <td>An Act exonerating certain individuals accused of witchcraft in colonial Massachusetts</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Redraft</span>
+of 
+                                                <a target="_blank" href="/Bills/194/H1927">H.1927</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Study Order" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H5281">H.5281&nbsp;</a></td>
+                                    <td>Study Order</td>
+                                    <td>
+<a href="/Committees/Detail/J19/194" aria-label="Go to Judiciary (J)'s Profile">Judiciary (J)</a>                                    </td>
+                                    <td>
+
+                                                    <span data-toggle="popover" data-content="Bills: &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1581&quot;&gt;H.1581&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1582&quot;&gt;H.1582&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1583&quot;&gt;H.1583&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1584&quot;&gt;H.1584&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1585&quot;&gt;H.1585&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1586&quot;&gt;H.1586&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1587&quot;&gt;H.1587&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1589&quot;&gt;H.1589&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1591&quot;&gt;H.1591&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1592&quot;&gt;H.1592&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1593&quot;&gt;H.1593&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1594&quot;&gt;H.1594&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1595&quot;&gt;H.1595&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1598&quot;&gt;H.1598&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1599&quot;&gt;H.1599&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1602&quot;&gt;H.1602&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1604&quot;&gt;H.1604&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1605&quot;&gt;H.1605&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1606&quot;&gt;H.1606&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1607&quot;&gt;H.1607&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1609&quot;&gt;H.1609&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1610&quot;&gt;H.1610&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1611&quot;&gt;H.1611&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1612&quot;&gt;H.1612&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1613&quot;&gt;H.1613&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1614&quot;&gt;H.1614&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1615&quot;&gt;H.1615&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1616&quot;&gt;H.1616&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1617&quot;&gt;H.1617&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1618&quot;&gt;H.1618&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1619&quot;&gt;H.1619&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1622&quot;&gt;H.1622&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1623&quot;&gt;H.1623&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1624&quot;&gt;H.1624&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1626&quot;&gt;H.1626&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1627&quot;&gt;H.1627&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1628&quot;&gt;H.1628&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1629&quot;&gt;H.1629&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1632&quot;&gt;H.1632&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1633&quot;&gt;H.1633&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1647&quot;&gt;H.1647&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1648&quot;&gt;H.1648&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1650&quot;&gt;H.1650&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1652&quot;&gt;H.1652&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1654&quot;&gt;H.1654&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1656&quot;&gt;H.1656&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1657&quot;&gt;H.1657&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1658&quot;&gt;H.1658&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1659&quot;&gt;H.1659&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1660&quot;&gt;H.1660&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1661&quot;&gt;H.1661&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1662&quot;&gt;H.1662&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1663&quot;&gt;H.1663&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1664&quot;&gt;H.1664&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1665&quot;&gt;H.1665&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1666&quot;&gt;H.1666&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1670&quot;&gt;H.1670&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1671&quot;&gt;H.1671&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1672&quot;&gt;H.1672&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1674&quot;&gt;H.1674&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1676&quot;&gt;H.1676&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1677&quot;&gt;H.1677&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1678&quot;&gt;H.1678&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1679&quot;&gt;H.1679&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1680&quot;&gt;H.1680&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1681&quot;&gt;H.1681&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1683&quot;&gt;H.1683&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1684&quot;&gt;H.1684&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1687&quot;&gt;H.1687&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1689&quot;&gt;H.1689&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1693&quot;&gt;H.1693&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1694&quot;&gt;H.1694&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1696&quot;&gt;H.1696&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1697&quot;&gt;H.1697&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1698&quot;&gt;H.1698&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1699&quot;&gt;H.1699&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1700&quot;&gt;H.1700&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1701&quot;&gt;H.1701&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1702&quot;&gt;H.1702&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1703&quot;&gt;H.1703&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1704&quot;&gt;H.1704&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1705&quot;&gt;H.1705&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1706&quot;&gt;H.1706&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1707&quot;&gt;H.1707&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1708&quot;&gt;H.1708&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1709&quot;&gt;H.1709&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1710&quot;&gt;H.1710&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1711&quot;&gt;H.1711&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1712&quot;&gt;H.1712&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1713&quot;&gt;H.1713&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1714&quot;&gt;H.1714&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1715&quot;&gt;H.1715&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1716&quot;&gt;H.1716&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1717&quot;&gt;H.1717&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1718&quot;&gt;H.1718&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1719&quot;&gt;H.1719&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1720&quot;&gt;H.1720&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1721&quot;&gt;H.1721&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1723&quot;&gt;H.1723&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1724&quot;&gt;H.1724&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1725&quot;&gt;H.1725&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1726&quot;&gt;H.1726&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1727&quot;&gt;H.1727&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1728&quot;&gt;H.1728&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1729&quot;&gt;H.1729&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1730&quot;&gt;H.1730&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1731&quot;&gt;H.1731&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1735&quot;&gt;H.1735&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1736&quot;&gt;H.1736&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1737&quot;&gt;H.1737&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1739&quot;&gt;H.1739&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1741&quot;&gt;H.1741&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1742&quot;&gt;H.1742&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1743&quot;&gt;H.1743&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1744&quot;&gt;H.1744&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1745&quot;&gt;H.1745&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1746&quot;&gt;H.1746&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1747&quot;&gt;H.1747&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1748&quot;&gt;H.1748&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1749&quot;&gt;H.1749&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1751&quot;&gt;H.1751&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1752&quot;&gt;H.1752&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1753&quot;&gt;H.1753&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1754&quot;&gt;H.1754&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1755&quot;&gt;H.1755&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1756&quot;&gt;H.1756&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1757&quot;&gt;H.1757&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1759&quot;&gt;H.1759&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1762&quot;&gt;H.1762&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1763&quot;&gt;H.1763&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1764&quot;&gt;H.1764&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1769&quot;&gt;H.1769&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1770&quot;&gt;H.1770&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1772&quot;&gt;H.1772&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1773&quot;&gt;H.1773&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1774&quot;&gt;H.1774&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1775&quot;&gt;H.1775&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1776&quot;&gt;H.1776&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1777&quot;&gt;H.1777&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1778&quot;&gt;H.1778&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1779&quot;&gt;H.1779&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1780&quot;&gt;H.1780&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1781&quot;&gt;H.1781&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1782&quot;&gt;H.1782&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1783&quot;&gt;H.1783&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1784&quot;&gt;H.1784&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1785&quot;&gt;H.1785&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1786&quot;&gt;H.1786&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1787&quot;&gt;H.1787&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1788&quot;&gt;H.1788&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1789&quot;&gt;H.1789&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1790&quot;&gt;H.1790&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1791&quot;&gt;H.1791&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1792&quot;&gt;H.1792&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1793&quot;&gt;H.1793&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1794&quot;&gt;H.1794&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1795&quot;&gt;H.1795&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1796&quot;&gt;H.1796&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1797&quot;&gt;H.1797&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1798&quot;&gt;H.1798&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1799&quot;&gt;H.1799&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1800&quot;&gt;H.1800&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1801&quot;&gt;H.1801&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1802&quot;&gt;H.1802&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1803&quot;&gt;H.1803&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1804&quot;&gt;H.1804&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1805&quot;&gt;H.1805&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1806&quot;&gt;H.1806&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1807&quot;&gt;H.1807&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1808&quot;&gt;H.1808&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1809&quot;&gt;H.1809&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1810&quot;&gt;H.1810&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1811&quot;&gt;H.1811&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1812&quot;&gt;H.1812&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1813&quot;&gt;H.1813&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1814&quot;&gt;H.1814&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1815&quot;&gt;H.1815&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1816&quot;&gt;H.1816&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1817&quot;&gt;H.1817&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1818&quot;&gt;H.1818&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1819&quot;&gt;H.1819&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1820&quot;&gt;H.1820&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1821&quot;&gt;H.1821&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1822&quot;&gt;H.1822&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1824&quot;&gt;H.1824&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1825&quot;&gt;H.1825&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1826&quot;&gt;H.1826&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1827&quot;&gt;H.1827&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1828&quot;&gt;H.1828&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1829&quot;&gt;H.1829&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1831&quot;&gt;H.1831&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1834&quot;&gt;H.1834&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1835&quot;&gt;H.1835&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1836&quot;&gt;H.1836&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1837&quot;&gt;H.1837&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1838&quot;&gt;H.1838&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1839&quot;&gt;H.1839&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1840&quot;&gt;H.1840&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1841&quot;&gt;H.1841&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1842&quot;&gt;H.1842&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1843&quot;&gt;H.1843&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1844&quot;&gt;H.1844&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1846&quot;&gt;H.1846&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1847&quot;&gt;H.1847&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1848&quot;&gt;H.1848&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1850&quot;&gt;H.1850&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1852&quot;&gt;H.1852&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1853&quot;&gt;H.1853&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1854&quot;&gt;H.1854&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1858&quot;&gt;H.1858&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1859&quot;&gt;H.1859&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1860&quot;&gt;H.1860&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1861&quot;&gt;H.1861&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1862&quot;&gt;H.1862&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1863&quot;&gt;H.1863&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1864&quot;&gt;H.1864&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1865&quot;&gt;H.1865&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1866&quot;&gt;H.1866&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1867&quot;&gt;H.1867&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1868&quot;&gt;H.1868&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1869&quot;&gt;H.1869&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1870&quot;&gt;H.1870&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1871&quot;&gt;H.1871&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1872&quot;&gt;H.1872&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1874&quot;&gt;H.1874&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1875&quot;&gt;H.1875&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1876&quot;&gt;H.1876&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1878&quot;&gt;H.1878&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1879&quot;&gt;H.1879&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1880&quot;&gt;H.1880&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1881&quot;&gt;H.1881&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1882&quot;&gt;H.1882&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1883&quot;&gt;H.1883&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1884&quot;&gt;H.1884&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1885&quot;&gt;H.1885&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1886&quot;&gt;H.1886&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1887&quot;&gt;H.1887&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1888&quot;&gt;H.1888&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1889&quot;&gt;H.1889&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1891&quot;&gt;H.1891&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1892&quot;&gt;H.1892&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1893&quot;&gt;H.1893&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1894&quot;&gt;H.1894&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1895&quot;&gt;H.1895&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1896&quot;&gt;H.1896&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1899&quot;&gt;H.1899&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1901&quot;&gt;H.1901&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1902&quot;&gt;H.1902&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1903&quot;&gt;H.1903&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1904&quot;&gt;H.1904&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1905&quot;&gt;H.1905&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1906&quot;&gt;H.1906&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1907&quot;&gt;H.1907&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1908&quot;&gt;H.1908&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1909&quot;&gt;H.1909&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1910&quot;&gt;H.1910&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1911&quot;&gt;H.1911&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1912&quot;&gt;H.1912&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1914&quot;&gt;H.1914&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1915&quot;&gt;H.1915&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1916&quot;&gt;H.1916&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1917&quot;&gt;H.1917&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1918&quot;&gt;H.1918&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1919&quot;&gt;H.1919&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1920&quot;&gt;H.1920&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1922&quot;&gt;H.1922&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1923&quot;&gt;H.1923&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1924&quot;&gt;H.1924&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1925&quot;&gt;H.1925&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1926&quot;&gt;H.1926&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1929&quot;&gt;H.1929&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1930&quot;&gt;H.1930&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1931&quot;&gt;H.1931&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1933&quot;&gt;H.1933&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1935&quot;&gt;H.1935&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1937&quot;&gt;H.1937&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1938&quot;&gt;H.1938&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1940&quot;&gt;H.1940&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1942&quot;&gt;H.1942&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1943&quot;&gt;H.1943&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1944&quot;&gt;H.1944&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1945&quot;&gt;H.1945&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1947&quot;&gt;H.1947&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1948&quot;&gt;H.1948&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1949&quot;&gt;H.1949&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1950&quot;&gt;H.1950&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1951&quot;&gt;H.1951&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1952&quot;&gt;H.1952&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1955&quot;&gt;H.1955&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1956&quot;&gt;H.1956&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1957&quot;&gt;H.1957&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1959&quot;&gt;H.1959&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1960&quot;&gt;H.1960&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1961&quot;&gt;H.1961&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1962&quot;&gt;H.1962&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1963&quot;&gt;H.1963&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1964&quot;&gt;H.1964&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1965&quot;&gt;H.1965&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1970&quot;&gt;H.1970&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1971&quot;&gt;H.1971&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1972&quot;&gt;H.1972&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1973&quot;&gt;H.1973&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1974&quot;&gt;H.1974&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1975&quot;&gt;H.1975&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1976&quot;&gt;H.1976&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1977&quot;&gt;H.1977&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1979&quot;&gt;H.1979&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1980&quot;&gt;H.1980&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1981&quot;&gt;H.1981&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1982&quot;&gt;H.1982&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1983&quot;&gt;H.1983&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1984&quot;&gt;H.1984&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1985&quot;&gt;H.1985&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1986&quot;&gt;H.1986&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1988&quot;&gt;H.1988&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1989&quot;&gt;H.1989&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1990&quot;&gt;H.1990&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1991&quot;&gt;H.1991&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1992&quot;&gt;H.1992&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1993&quot;&gt;H.1993&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1994&quot;&gt;H.1994&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1995&quot;&gt;H.1995&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1996&quot;&gt;H.1996&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1997&quot;&gt;H.1997&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1998&quot;&gt;H.1998&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H1999&quot;&gt;H.1999&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2000&quot;&gt;H.2000&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2001&quot;&gt;H.2001&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2002&quot;&gt;H.2002&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2003&quot;&gt;H.2003&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2004&quot;&gt;H.2004&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2005&quot;&gt;H.2005&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2006&quot;&gt;H.2006&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2007&quot;&gt;H.2007&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2008&quot;&gt;H.2008&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2009&quot;&gt;H.2009&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2010&quot;&gt;H.2010&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2011&quot;&gt;H.2011&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2012&quot;&gt;H.2012&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2013&quot;&gt;H.2013&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2014&quot;&gt;H.2014&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2015&quot;&gt;H.2015&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2017&quot;&gt;H.2017&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2018&quot;&gt;H.2018&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2019&quot;&gt;H.2019&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2020&quot;&gt;H.2020&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2021&quot;&gt;H.2021&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2022&quot;&gt;H.2022&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2027&quot;&gt;H.2027&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2028&quot;&gt;H.2028&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2029&quot;&gt;H.2029&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2031&quot;&gt;H.2031&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2032&quot;&gt;H.2032&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2033&quot;&gt;H.2033&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2034&quot;&gt;H.2034&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2035&quot;&gt;H.2035&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2036&quot;&gt;H.2036&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2037&quot;&gt;H.2037&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2038&quot;&gt;H.2038&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2039&quot;&gt;H.2039&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2040&quot;&gt;H.2040&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2042&quot;&gt;H.2042&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2043&quot;&gt;H.2043&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2044&quot;&gt;H.2044&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2046&quot;&gt;H.2046&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2047&quot;&gt;H.2047&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2048&quot;&gt;H.2048&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2049&quot;&gt;H.2049&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2050&quot;&gt;H.2050&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2051&quot;&gt;H.2051&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2052&quot;&gt;H.2052&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2053&quot;&gt;H.2053&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2054&quot;&gt;H.2054&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2055&quot;&gt;H.2055&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2056&quot;&gt;H.2056&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2057&quot;&gt;H.2057&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2058&quot;&gt;H.2058&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2059&quot;&gt;H.2059&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2061&quot;&gt;H.2061&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2062&quot;&gt;H.2062&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2063&quot;&gt;H.2063&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2645&quot;&gt;H.2645&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H3991&quot;&gt;H.3991&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H3992&quot;&gt;H.3992&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4016&quot;&gt;H.4016&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4017&quot;&gt;H.4017&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4018&quot;&gt;H.4018&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4045&quot;&gt;H.4045&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4046&quot;&gt;H.4046&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4064&quot;&gt;H.4064&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4065&quot;&gt;H.4065&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4066&quot;&gt;H.4066&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4164&quot;&gt;H.4164&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4199&quot;&gt;H.4199&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4218&quot;&gt;H.4218&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4412&quot;&gt;H.4412&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4684&quot;&gt;H.4684&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H4736&quot;&gt;H.4736&lt;/a&gt;, &lt;a target=&quot;_blank&quot; href=&quot;/Bills/194/H2023&quot;&gt;H.2023&lt;/a&gt;">
+                                                        Study - Reporting Time Expired <span class="fa fa-list"></span>
+                                                    </span>
+                                    </td>
+                                </tr>
+                        </tbody>
+                    </table>
+                    <div class="tableCaption pull-right"><sup>S </sup> — Pending in the Senate Clerk's Office</div> <br />
+                    <div class="tableCaption pull-right"><sup>H </sup> — Pending in the House Clerk's Office</div>
+                    <div class="col-xs-12 col-md-6 paginationContainer">
+        <nav aria-label="Results pages">
+            <ul class="pagination pagination-sm">
+                <li class="">
+                    <a href="javascript:void(0);" onclick="return reloadAjaxContent(1);" aria-disabled="false">
+                        <span class="">&laquo;</span><span class="sr-only"> First page</span>
+                    </a>
+                </li>
+                <li class="">
+                    <a href="javascript:void(0);" onclick="return reloadAjaxContent(33);" aria-disabled="false">
+                        <span class="">&lsaquo;</span><span class="sr-only"> Previous page</span>
+                    </a>
+                </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(30);">
+                                <span class="sr-only">Page </span>30
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(31);">
+                                <span class="sr-only">Page </span>31
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(32);">
+                                <span class="sr-only">Page </span>32
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(33);">
+                                <span class="sr-only">Page </span>33
+                            </a>
+                        </li>
+                        <li class="active">
+                            <span aria-current="page"><span class="sr-only">Page </span>34</span>
+                        </li>
+                <li class="disabled">
+                    <a href="javascript:void(0)" onclick="" aria-disabled="true">
+                        <span class="icon-white">&rsaquo;</span><span class="sr-only"> Next page</span>
+                    </a>
+                </li>
+                <li class="disabled">
+                    <a href="javascript:void(0)" onclick="" aria-disabled="true">
+                        <span class="icon-white">&raquo;</span><span class="sr-only"> Last page</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+</div>
+    </div>
+
+
+    <script>
+            
+        $('#searchTerms').on('keyup',
+            function (event) {
+                event.preventDefault();
+                if (event.keyCode === 13) {
+                    reloadAjaxContent(1);
+                }
+            });
+
+        function reloadAjaxContent(page, $this, current) {
+            if (current === null || current === undefined) {
+                current = 'False';
+            }
+
+            var elementsToReplace = '.customFade';
+            var elementsTofade = '.customFade';
+            var searchTerm = $('#searchTerms').val() ? $('#searchTerms').val() :"";
+            var url = '/Committees/Detail/J19/194/Bills';
+            if ($this === null || $this === undefined) {
+                url += '/' + 'asc' + '/' + 'EntityNumber/' + searchTerm + '?current=' + current;
+            }
+            else {
+                url += '/' + $this.attr('data-sortdirection') + '/' + $this.attr('data-managedproperty')+ '/' + searchTerm + '?current=' + current;
+            }
+            if (page == null)
+                 page = 1;
+             url += '&pageNumber=' + page;
+
+             history.pushState(true, null, url);
+             ExecuteAction(this, elementsToReplace, url, null, false, function () {
+                 fadeInContent(elementsTofade);
+                 checkPageNumber();
+             });
+             return false;
+        };
+
+        // Initialize Popover for report type
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                container: 'body',
+                html: true,
+                animation: false,
+                placement: 'right',
+                trigger: 'manual'
+            }).on("mouseenter", function () {
+                var _this = this;
+                $(this).popover("show");
+                $(".popover").on("mouseleave", function () {
+                    $(_this).popover('hide');
+                });
+            }).on("mouseleave", function () {
+                var _this = this;
+                setTimeout(function () {
+                    if (!$(".popover:hover").length) {
+                        $(_this).popover("hide");
+                    }
+                }, 300);
+            });
+        });
+
+    </script>
+</div>
+
+<script src="/Scripts/search.min.js?v=U30Ycjq9Ejgd9ntIEPeRCvCkWvDxfRK2pnGlqCZOCy4"></script>

@@ -1,0 +1,118 @@
+# Beacon Hill Compliance Tracker
+
+Checks whether Massachusetts Legislature committees follow their own rules, bill by
+bill: reporting by the deadline (JR 10, HR 27), announcing hearings in advance
+(JR 1D, SR 12, HR 17A), posting a plain-language summary (JR 1B), and posting
+committee votes (JR 1D, HR 17B). Every verdict cites the rule text it was judged
+against. Data comes from the public site, malegislature.gov.
+
+Each stage is independent and talks only to a local store, so rules can be re-run
+over old data and parser fixes can be applied to pages already captured.
+
+## Pipeline
+
+```
+ malegislature.gov
+        |
+        v
+  +-----------+   committees, bill lists, hearings (dockets, documents)
+  |  collect  |----------------------------------------------+
+  +-----------+                                              |
+        |                                                    v
+  +-----------+   bill pages, vote/summary tabs, PDFs   +---------+
+  |  scrape   |---------------------------------------->|  store  |
+  +-----------+   (captures + observations)             | sqlite  |
+                                                        | + blobs |
+  +-----------+   re-derive observations from stored    |         |
+  | reextract |<------------- ------------------------->|         |
+  +-----------+   captures when an extractor changes    |         |
+                                                        |         |
+  +-----------+   facts -> ruleset (s194) -> verdicts   |         |
+  | evaluate  |<----------- --------------------------->|         |
+  +-----------+   with derivations and rule citations   |         |
+                                                        |         |
+  +-----------+   JSON export, HTML audit report        |         |
+  |  report   |<----------------------------------------|         |
+  +-----------+                                         +---------+
+        |
+        v
+  data/reports/<date>/<committee>.json, <committee>_audit.html
+```
+
+`run mvp` = collect, scrape, reextract, evaluate, report (committee by committee;
+reextract once, first). `run offline` = reextract, evaluate, report; no network.
+
+## Setup
+
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+
+```
+uv sync
+```
+
+`beacon.toml` (all keys optional):
+
+```toml
+data_dir = "data"          # store, blobs, reports, logs, events
+session = 194
+committees = ["J19"]       # default scope; "all" = every listed committee
+ruleset = "s194"
+rules_dir = "rules"        # verbatim JOINT.md, HOUSE.md, SENATE.md
+
+[fetch]
+min_interval = 0.5         # seconds between requests to the site
+max_workers = 4
+
+[schedule]
+sweep_days = 7             # re-search documents for unchanged bills this often
+```
+
+## Running
+
+Global options go before the command.
+
+```
+uv run beacon run mvp                         # default committees, full pipeline
+uv run beacon --committee J45 run mvp         # one committee (repeatable)
+uv run beacon --committee all run mvp         # every committee (long)
+uv run beacon run offline                     # re-check stored data, no network
+uv run beacon --as-of 2026-03-18 evaluate     # as things stood on a date
+uv run beacon --full scrape                   # search every bill's documents again
+uv run beacon report                          # rewrite reports from the latest evaluation
+uv run beacon serve                           # control center at http://127.0.0.1:8765
+```
+
+Other flags: `--quiet` (no console progress), `--json-events` (events to stdout),
+`--v1 <basic_X.json>` (compare against an output file from the original tracker), `--config <path>`.
+
+Only one run can use a data directory at a time; a second exits with an error.
+
+## Output
+
+```
+data/
+  beacon.db                      runs, captures, inventory, observations, evaluations
+  blobs/                         every fetched page, gzip, by sha256
+  reports/<date>/                <committee>.json, <committee>_audit.html
+  events/                        <run_id>.jsonl, plan-<id>.jsonl (live progress)
+  logs/beacon.log
+```
+
+## Making changes
+
+| To change | Edit | Then |
+|---|---|---|
+| A rule's interpretation | `beacon/evaluator/rulesets/s194/` (bump `version` in `ruleset.py`) | `run offline` |
+| How history rows are read | `beacon/scraper/history/` (bump `EXTRACTOR_VERSION`) | `run offline` |
+| How documents are found | `beacon/scraper/documents/` (bump `FINDER_VERSION`) | `run offline`; new pages need `run mvp` |
+| Committee names | `beacon/scraper/history/committees.py` (retired names: `active_until`) | bump `EXTRACTOR_VERSION` and `FINDER_VERSION`, `run offline` |
+| Rule text | `rules/*.md` (reports flag verdicts judged against older text) | `run offline` |
+| Page noise ignored when detecting changes | `beacon/adapters/site.py` | none |
+
+Checks:
+
+```
+uv run pytest
+uv run ruff format . && uv run ruff check .
+uv run ty check
+```

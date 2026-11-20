@@ -1,0 +1,10 @@
+data_dir = "data"
+base_url = "https://malegislature.gov"
+session = 194
+committees = ["J19"]
+ruleset = "s194"
+rules_dir = "rules"
+
+[fetch]
+min_interval = 0.5
+max_workers = 4

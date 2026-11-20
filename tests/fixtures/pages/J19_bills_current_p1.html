@@ -1,0 +1,654 @@
+
+<div class="tab-pane active customFade in billList" role="tabpanel" aria-label="Bills Tab">
+    <!-- DEVS - use tableToggle functionality similar to Legislator's sponsored & unsponsored bills -->
+    <div class="tableToggle">
+        <a onclick="return reloadAjaxContent(null, null, true);" class="current" aria-label="Display bills currently in committee">Currently In Committee</a>
+        <span>&nbsp;|&nbsp;</span>
+        <a onclick="return reloadAjaxContent(null, null, false);" class="" aria-label="Display bills reported out of committee">Reported Out Of Committee</a>
+    </div>
+
+    <div id="searchResults">
+        <div class="row">
+            <div class="form-group col-xs-12 col-md-5">
+                <label for="searchTerms">Search by bill number</label>
+                <input value="" type="text" id="searchTerms" class="form-control" />
+            </div>
+            <div class="col-xs-12 col-md-3">
+                <button type="button" class="btn btn-primary inlineSearchButton" onclick="return reloadAjaxContent(1);" aria-label="Bill Search">Search Bills</button>
+            </div>
+        </div>
+        <hr />
+            <!-- Display Bills currently in committee if tableToggle selects bills currentently in committee -->
+                    <div class="row">
+                        <div class="col-xs-12 col-md-6">
+                            <div class="searchResultSummary">Displaying  23 Bills</div>
+                        </div>
+                        <div class="col-xs-12 col-md-6 paginationContainer">
+</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-condensed table-dark table-striped committeeBillsTable">
+                            <caption class="sr-only">Committee Bills</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col"><span class='sr-only'>Follow In My Legislature</span></th>
+                                    
+<th scope="col" aria-sort="ascending" class="sortCol " data-managedproperty="EntityNumber" data-sortdirection = "asc">
+    <button>
+        Bill No.
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                fa-sort-up
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                    <th scope="col" class="titleCol">Bill Title</th>
+                                    
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="SponsorName" data-sortdirection = "">
+    <button>
+        Sponsor
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                    
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="CommitteeArrivalDate" data-sortdirection = "">
+    <button>
+        Arrived
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                    
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="ScheduledStartTime" data-sortdirection = "">
+    <button>
+        Hearing Schedule
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to nondisclosure agreements " aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H10">H.10&nbsp;</a></td>
+                                        <td>An Act relative to nondisclosure agreements </td>
+                                        <td>
+Auditor of the Commonwealth                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5452" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />11/4/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to due process" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/S1039">S.1039&nbsp;</a></td>
+                                        <td>An Act relative to due process</td>
+                                        <td>
+<a href="/Legislators/Profile/N_C0" aria-label="Go to Collins, Nick (SEN)'s Profile">Collins, Nick (SEN)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/10/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5358" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />9/9/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to consumer protection and civil rights&#xD;&#xA;" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/S1041">S.1041&nbsp;</a></td>
+                                        <td>An Act relative to consumer protection and civil rights&#xD;&#xA;</td>
+                                        <td>
+<a href="/Legislators/Profile/N_C0" aria-label="Go to Collins, Nick (SEN)'s Profile">Collins, Nick (SEN)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/10/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5229" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />7/29/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to immigration detention and collaboration agreements" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1588">H.1588&nbsp;</a></td>
+                                        <td>An Act relative to immigration detention and collaboration agreements</td>
+                                        <td>
+<a href="/Legislators/Profile/CPB2" aria-label="Go to Barber, Christine P. (HOU)'s Profile">Barber, Christine P. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5494" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />11/25/2025 10:00 AM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to criminal harassment against a sports official" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1600">H.1600&nbsp;</a></td>
+                                        <td>An Act relative to criminal harassment against a sports official</td>
+                                        <td>
+<a href="/Legislators/Profile/DFC1" aria-label="Go to Cahill, Daniel (HOU)'s Profile">Cahill, Daniel (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5153" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />5/6/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to leaving the scene of a collision" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1620">H.1620&nbsp;</a></td>
+                                        <td>An Act relative to leaving the scene of a collision</td>
+                                        <td>
+<a href="/Legislators/Profile/T_C1" aria-label="Go to Chan, Tackey (HOU)'s Profile">Chan, Tackey (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5153" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />5/6/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to assist the investigation of serious crimes" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1621">H.1621&nbsp;</a></td>
+                                        <td>An Act to assist the investigation of serious crimes</td>
+                                        <td>
+<a href="/Legislators/Profile/T_C1" aria-label="Go to Chan, Tackey (HOU)'s Profile">Chan, Tackey (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5358" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />9/9/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to the assault on and aggravated harassment of sports officials" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1625">H.1625&nbsp;</a></td>
+                                        <td>An Act relative to the assault on and aggravated harassment of sports officials</td>
+                                        <td>
+<a href="/Legislators/Profile/R_C1" aria-label="Go to Consalvo, Rob (HOU)'s Profile">Consalvo, Rob (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5153" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />5/6/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to access to justice" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1635">H.1635&nbsp;</a></td>
+                                        <td>An Act relative to access to justice</td>
+                                        <td>
+<a href="/Legislators/Profile/MSD1" aria-label="Go to Day, Michael S. (HOU)'s Profile">Day, Michael S. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5494" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />11/25/2025 10:00 AM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to prevent assaults on sports officials" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1682">H.1682&nbsp;</a></td>
+                                        <td>An Act to prevent assaults on sports officials</td>
+                                        <td>
+<a href="/Legislators/Profile/RME1" aria-label="Go to Elliott, Rodney M. (HOU)'s Profile">Elliott, Rodney M. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5153" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />5/6/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to the interception of wire and oral communications" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1873">H.1873&nbsp;</a></td>
+                                        <td>An Act relative to the interception of wire and oral communications</td>
+                                        <td>
+<a href="/Legislators/Profile/CMM1" aria-label="Go to Markey, Christopher M. (HOU)'s Profile">Markey, Christopher M. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5358" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />9/9/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act ensuring access to equitable representation in immigration proceedings" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1954">H.1954&nbsp;</a></td>
+                                        <td>An Act ensuring access to equitable representation in immigration proceedings</td>
+                                        <td>
+<a href="/Legislators/Profile/DMR1" aria-label="Go to Rogers, David M. (HOU)'s Profile">Rogers, David M. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5494" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />11/25/2025 10:00 AM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act concerning assault of a sports official" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H1969">H.1969&nbsp;</a></td>
+                                        <td>An Act concerning assault of a sports official</td>
+                                        <td>
+<a href="/Legislators/Profile/JNR1" aria-label="Go to Roy, Jeffrey N. (HOU)'s Profile">Roy, Jeffrey N. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5153" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />5/6/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to assault and battery against healthcare personnel, school officials, and first responders" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H2060">H.2060&nbsp;</a></td>
+                                        <td>An Act relative to assault and battery against healthcare personnel, school officials, and first responders</td>
+                                        <td>
+<a href="/Legislators/Profile/SGX1" aria-label="Go to Xiarhos, Steven George (HOU)'s Profile">Xiarhos, Steven George (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5153" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />5/6/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to unsolved homicides" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H4114">H.4114&nbsp;</a></td>
+                                        <td>An Act relative to unsolved homicides</td>
+                                        <td>
+<a href="/Legislators/Profile/REH1" aria-label="Go to Holmes, Russell E. (HOU)'s Profile">Holmes, Russell E. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>5/15/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5388" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />9/23/2025 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to preventing immigration reporting and ensuring the right to legal counsel" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H4115">H.4115&nbsp;</a></td>
+                                        <td>An Act relative to preventing immigration reporting and ensuring the right to legal counsel</td>
+                                        <td>
+<a href="/Legislators/Profile/DAS1" aria-label="Go to Sena, Danillo A. (HOU)'s Profile">Sena, Danillo A. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>5/15/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5494" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />11/25/2025 10:00 AM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to reaffirming the rights of individuals experiencing homelessness" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H4783">H.4783&nbsp;</a></td>
+                                        <td>An Act relative to reaffirming the rights of individuals experiencing homelessness</td>
+                                        <td>
+<a href="/Legislators/Profile/L_S1" aria-label="Go to Sabadosa, Lindsay N. (HOU)'s Profile">Sabadosa, Lindsay N. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>11/24/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5639" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />4/7/2026 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to the condominium owners&#x27; rights" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H4826">H.4826&nbsp;</a></td>
+                                        <td>An Act relative to the condominium owners&#x27; rights</td>
+                                        <td>
+<a href="/Legislators/Profile/M_K1" aria-label="Go to Kilcoyne, Meghan K. (HOU)'s Profile">Kilcoyne, Meghan K. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>12/8/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5639" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />4/7/2026 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to strengthening supports for overcomers of abuse" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H4876">H.4876&nbsp;</a></td>
+                                        <td>An Act relative to strengthening supports for overcomers of abuse</td>
+                                        <td>
+<a href="/Legislators/Profile/CAF1" aria-label="Go to Fiola, Carole A. (HOU)'s Profile">Fiola, Carole A. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>12/22/2025</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5639" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />4/7/2026 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act prohibiting anticompetitive conduct and agreements and strengthening the Massachusetts Antitrust Act" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H5111">H.5111&nbsp;</a></td>
+                                        <td>An Act prohibiting anticompetitive conduct and agreements and strengthening the Massachusetts Antitrust Act</td>
+                                        <td>
+<a href="/Legislators/Profile/DMR1" aria-label="Go to Rogers, David M. (HOU)'s Profile">Rogers, David M. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>2/12/2026</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5639" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />4/7/2026 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act designating the Dorchester division of the Boston municipal court as the Judge Leslie E. Harris courthouse" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H5116">H.5116&nbsp;</a></td>
+                                        <td>An Act designating the Dorchester division of the Boston municipal court as the Judge Leslie E. Harris courthouse</td>
+                                        <td>
+<a href="/Legislators/Profile/CJW1" aria-label="Go to Worrell, Christopher J. (HOU)'s Profile">Worrell, Christopher J. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>2/12/2026</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5639" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />4/7/2026 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to repeal archaic laws criminalizing pregnancy" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H5244">H.5244&nbsp;</a></td>
+                                        <td>An Act to repeal archaic laws criminalizing pregnancy</td>
+                                        <td>
+<a href="/Legislators/Profile/L_S1" aria-label="Go to Sabadosa, Lindsay N. (HOU)'s Profile">Sabadosa, Lindsay N. (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>3/12/2026</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5639" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />4/7/2026 1:00 PM
+                                                </a>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to ensure appropriate and timely emergency medical response" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                        <td><a href="/Bills/194/H5437">H.5437&nbsp;</a></td>
+                                        <td>An Act to ensure appropriate and timely emergency medical response</td>
+                                        <td>
+<a href="/Legislators/Profile/H_G1" aria-label="Go to Gómez, Homar (HOU)'s Profile">Gómez, Homar (HOU)</a>                                        </td>
+                                        <!-- TODO Arrival to committee date needs to be added -->
+                                        <td>5/18/2026</td>
+                                        <!-- TODO Hearings for bill need to be added -->
+                                            <td>
+                                                <a href="/Events/Hearings/Detail/5756" class="hearingSchedule">
+                                                    Scheduled for
+                                                    <br />7/31/2026 10:00 AM
+                                                </a>
+                                            </td>
+                                    </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- end .table-responsive -->
+                    <div class="row">
+                        <div class="col-xs-12 paginationContainer">
+</div>
+                    </div>
+                    <p class="well">
+                        The House and Senate adopted Joint Rules on June 26, 2025. Changes to the Rules require substantial updates to the legislative tracking system, and to how information is displayed on the Legislature’s website. Updates are continually being implemented to accurately reflect bill histories, tracking, and reporting.
+                        <br /><br />As a point of clarification, House legislation subject to House Rule 27 that have had a hearing and have not been reported are required to be reported to a study based on the deadlines indicated in Joint Rule 10 and House Rule 27.
+                    </p>
+    </div>
+
+
+    <script>
+            
+        $('#searchTerms').on('keyup',
+            function (event) {
+                event.preventDefault();
+                if (event.keyCode === 13) {
+                    reloadAjaxContent(1);
+                }
+            });
+
+        function reloadAjaxContent(page, $this, current) {
+            if (current === null || current === undefined) {
+                current = 'True';
+            }
+
+            var elementsToReplace = '.customFade';
+            var elementsTofade = '.customFade';
+            var searchTerm = $('#searchTerms').val() ? $('#searchTerms').val() :"";
+            var url = '/Committees/Detail/J19/194/Bills';
+            if ($this === null || $this === undefined) {
+                url += '/' + 'asc' + '/' + 'EntityNumber/' + searchTerm + '?current=' + current;
+            }
+            else {
+                url += '/' + $this.attr('data-sortdirection') + '/' + $this.attr('data-managedproperty')+ '/' + searchTerm + '?current=' + current;
+            }
+            if (page == null)
+                 page = 1;
+             url += '&pageNumber=' + page;
+
+             history.pushState(true, null, url);
+             ExecuteAction(this, elementsToReplace, url, null, false, function () {
+                 fadeInContent(elementsTofade);
+                 checkPageNumber();
+             });
+             return false;
+        };
+
+        // Initialize Popover for report type
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                container: 'body',
+                html: true,
+                animation: false,
+                placement: 'right',
+                trigger: 'manual'
+            }).on("mouseenter", function () {
+                var _this = this;
+                $(this).popover("show");
+                $(".popover").on("mouseleave", function () {
+                    $(_this).popover('hide');
+                });
+            }).on("mouseleave", function () {
+                var _this = this;
+                setTimeout(function () {
+                    if (!$(".popover:hover").length) {
+                        $(_this).popover("hide");
+                    }
+                }, 300);
+            });
+        });
+
+    </script>
+</div>
+
+<script src="/Scripts/search.min.js?v=U30Ycjq9Ejgd9ntIEPeRCvCkWvDxfRK2pnGlqCZOCy4"></script>

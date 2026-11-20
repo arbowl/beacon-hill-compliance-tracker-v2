@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beacon Hill Compliance Tracker</title>
+<style>
+  :root {
+    --ink: #161616; --soft: #4b4b4b; --faint: #777; --paper: #fbf9f4; --card: #ffffff; --panel: #f2eee6;
+    --line: #e1dcd1; --accent: #b4121f; --yes: #1f6a43; --no: #b4121f; --wait: #8a6a12; --link: #1f4e8c;
+    --serif: Georgia, "Times New Roman", serif; --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #efebe3; --soft: #c8c3b8; --faint: #9a958a; --paper: #121211; --card: #1b1a18; --panel: #24221f;
+            --line: #34322d; --accent: #ff6b6b; --yes: #6fcf97; --no: #ff6b6b; --wait: #e5c07b; --link: #8ab4f8;
+            --shadow: none; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--sans); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .bar { border-bottom: 1px solid var(--line); background: var(--card); }
+  .bar .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-top: 14px; padding-bottom: 14px; flex-wrap: wrap; }
+  .brand { font: 700 22px/1 var(--serif); }
+  .brand span { color: var(--accent); }
+  .session { font-size: 14px; color: var(--faint); }
+  h1 { font: 700 34px/1.2 var(--serif); margin: 32px 0 6px; }
+  .lede { color: var(--soft); font: 18px/1.5 var(--serif); margin: 0 0 24px; max-width: 46em; }
+  h2 { font: 700 20px/1.3 var(--serif); margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0 48px; }
+  @media (max-width: 900px) { .grid, .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 22px; box-shadow: var(--shadow); min-width: 0; }
+  .sentence { font: 24px/1.9 var(--serif); }
+  .sentence select { font: 700 22px var(--serif); color: var(--ink); background: var(--panel); border: 0; border-bottom: 2px solid var(--ink);
+                     border-radius: 4px 4px 0 0; padding: 2px 8px; max-width: 100%; }
+  .go { margin-top: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .go button { font: 700 17px var(--sans); background: var(--ink); color: var(--paper); border: 0; border-radius: 6px; padding: 12px 22px; cursor: pointer; }
+  .go button:disabled { opacity: .4; cursor: default; }
+  .explain { color: var(--soft); font-size: 15px; }
+  .options { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; gap: 24px; flex-wrap: wrap; font-size: 15px; }
+  .options label { display: flex; gap: 8px; align-items: center; }
+  .options input[type=date] { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); }
+  .hint { color: var(--faint); font-size: 13px; }
+  .state { display: flex; align-items: center; gap: 12px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--faint); flex: none; }
+  .dot.running { background: var(--wait); animation: pulse 1.4s ease-in-out infinite; }
+  .dot.done { background: var(--yes); } .dot.failed { background: var(--no); }
+  @keyframes pulse { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .dot.running { animation: none; } }
+  .state .word { font: 700 26px/1.1 var(--serif); }
+  .now { margin: 10px 0 14px; color: var(--soft); min-height: 1.5em; }
+  progress { width: 100%; height: 10px; accent-color: var(--ink); }
+  .which { margin: 14px 0 4px; padding: 12px 14px; background: var(--panel); border-radius: 8px; }
+  .which .count { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .which .who { font: 700 18px/1.3 var(--serif); margin: 2px 0 8px; }
+  .which progress { height: 6px; }
+  .steps { list-style: none; padding: 0; margin: 18px 0 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; counter-reset: step; }
+  .steps li { font-size: 13px; color: var(--faint); border-top: 4px solid var(--line); padding-top: 8px; }
+  .steps li.active { color: var(--ink); border-color: var(--wait); font-weight: 700; }
+  .steps li.done { color: var(--soft); border-color: var(--yes); }
+  .steps li.skip { opacity: .4; }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li { display: grid; grid-template-columns: 14px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .timeline li:last-child { border-bottom: 0; }
+  .timeline .dot { width: 10px; height: 10px; margin-top: 7px; }
+  .timeline .what { font-weight: 600; }
+  .timeline .when { font-size: 13px; color: var(--faint); }
+  .committees { display: grid; gap: 12px; }
+  .committee { border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .committee .name { font: 700 17px/1.3 var(--serif); }
+  .committee .split { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--panel); margin: 10px 0 6px; }
+  .split span { display: block; height: 100%; } .s-yes { background: var(--yes); } .s-no { background: var(--no); } .s-wait { background: var(--wait); }
+  .committee .links { margin-top: 8px; display: flex; gap: 16px; font-size: 15px; }
+  a, .linkish { color: var(--link); }
+  .linkish { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .yes { color: var(--yes); } .no { color: var(--no); } .wait { color: var(--wait); }
+  .back { margin: 28px 0 0; }
+  .explore-head .stats { display: flex; gap: 32px; flex-wrap: wrap; margin: 14px 0; }
+  .explore-head .n { font: 700 34px/1 var(--serif); }
+  input[type=search] { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; width: 100%; max-width: 420px; background: var(--card); color: var(--ink); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .chips button { font: 600 14px var(--sans); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .chips button[aria-pressed=true] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font: 700 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 8px 8px 6px 0; border-bottom: 2px solid var(--ink); }
+  td { padding: 10px 8px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .story { margin-top: 20px; }
+  .story .item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  blockquote { margin: 8px 0 0; padding: 2px 0 2px 12px; border-left: 3px solid var(--line); font: 15px/1.5 var(--serif); color: var(--soft); }
+  details summary { cursor: pointer; color: var(--link); font-size: 14px; }
+  :focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="bar"><div class="wrap"><div class="brand">Beacon Hill <span>Compliance</span> Tracker</div><div class="session" id="session"></div></div></div>
+
+<main class="wrap">
+  <div id="control">
+    <h1>Control center</h1>
+    <p class="lede">Check whether committees reported bills on time, announced hearings in advance, and posted summaries and votes. Every result links to the rule behind it.</p>
+    <div class="grid">
+      <section class="card" aria-labelledby="run-h">
+        <h2 id="run-h">Run a check</h2>
+        <div class="sentence">
+          <label for="plan" class="sr">I want to</label>
+          <select id="plan"><option value="mvp">check for updates</option><option value="offline">re-check saved data</option></select>
+          for <label for="committee" hidden>Committee</label><select id="committee"></select>
+        </div>
+        <p class="explain" id="plan-explain"></p>
+        <div class="go"><button id="start">Start</button><span class="hint" id="start-note"></span></div>
+        <div class="options">
+          <label title="See how things stood on an earlier date">As of <input type="date" id="as-of"></label>
+          <label title="Look again for every summary and vote, not only for bills that changed"><input type="checkbox" id="full"> Search every document again</label>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="status-h" aria-live="polite">
+        <h2 id="status-h">Status</h2>
+        <div class="state"><div class="dot" id="dot"></div><div class="word" id="word">Ready</div></div>
+        <div class="which" id="which" hidden></div>
+        <div class="now" id="now">Nothing is running.</div>
+        <progress id="progress" hidden></progress>
+        <ol class="steps" id="steps"></ol>
+      </section>
+    </div>
+    <div class="grid2">
+      <section class="card" aria-labelledby="committees-h">
+        <h2 id="committees-h">Committees checked</h2>
+        <div class="committees" id="cards"><span class="hint">No committee has been checked yet.</span></div>
+      </section>
+      <section class="card" aria-labelledby="recent-h">
+        <h2 id="recent-h">Recent activity</h2>
+        <ul class="timeline" id="timeline"></ul>
+      </section>
+    </div>
+  </div>
+
+  <div id="explore" hidden>
+    <p class="back"><button class="linkish" id="back">Back to the control center</button></p>
+    <div class="explore-head" id="explore-head"></div>
+    <section class="card">
+      <label for="search"><strong>Find a bill</strong></label><br>
+      <input type="search" id="search" placeholder="Bill number or title">
+      <div class="chips" role="group" aria-label="Show">
+        <button data-filter="all" aria-pressed="true">All</button>
+        <button data-filter="Non-Compliant" aria-pressed="false">Missed a rule</button>
+        <button data-filter="Compliant" aria-pressed="false">Followed every rule</button>
+        <button data-filter="Provisional" aria-pressed="false">Not yet known</button>
+      </div>
+      <table><thead><tr><th scope="col">Bill</th><th scope="col">Title</th><th scope="col">Result</th><th scope="col">Why</th></tr></thead><tbody id="bills"></tbody></table>
+      <p><button class="linkish" id="more" hidden>Show more</button></p>
+      <div id="story"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const longDate = (iso) => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; };
+const plain = (t) => String(t || "").replace(/\b\d{4}-\d{2}-\d{2}\b/g, (m) => longDate(m));
+const billLabel = (id) => id.replace(/^([HS])(\d+)$/, "$1.$2");
+const ago = (iso) => { const s = (Date.now() - new Date(iso)) / 1000;
+  if (s < 90) return "just now"; if (s < 5400) return `${Math.round(s / 60)} minutes ago`;
+  if (s < 129600) return `${Math.round(s / 3600)} hours ago`; return longDate(iso); };
+const STEP = {collect: "Find bills", scrape: "Read pages", reextract: "Update records", evaluate: "Check rules", report: "Write report"};
+const DOING = {collect: "Finding the committee's bills", scrape: "Reading bill pages", reextract: "Updating saved records",
+               evaluate: "Checking the rules", report: "Writing the report"};
+const EXPLAIN = {mvp: "Downloads the latest pages from malegislature.gov, then checks every bill. A few minutes for a small committee.",
+                 offline: "Applies the rules again to what has already been collected. Nothing is downloaded."};
+const RULES = {report_out_deadline: ["Reported out by the deadline", "reported on time"],
+  hearing_notice: ["Hearing announced with enough notice", "announced its hearing in time"],
+  summary_posted: ["Plain-language summary posted", "posted a summary"],
+  votes_posted: ["Committee votes posted", "posted its votes"], tenure_observed: ["Bill record found", "has a usable record"]};
+const ANSWER = {Met: ["Yes", "yes"], Unmet: ["No", "no"], Provisional: ["Not yet known", "wait"]};
+const LABEL = {"Compliant": ["Followed every rule", "yes"], "Non-Compliant": ["Missed a rule", "no"], "Provisional": ["Not yet known", "wait"]};
+const REASON = {not_yet_due: "The deadline has not passed yet.", missing_data: "Some information is missing.",
+                ambiguous_timing: "The timing cannot be confirmed.", awaiting_review: "Waiting for a person to confirm a document."};
+let options, overview = [], results = null, filter = "all", shown = 50, current = null;
+
+async function getJson(url, init) {
+  const r = await fetch(url, init); const body = await r.json();
+  if (!r.ok) throw new Error(body.error || r.statusText); return body;
+}
+
+async function init() {
+  options = await getJson("/api/options");
+  const s = options.session;
+  $("session").textContent = `${s}th General Court, ${2025 + 2 * (s - 194)}-${2026 + 2 * (s - 194)}`;
+  const select = $("committee");
+  select.add(new Option("every committee", options.all_committees));
+  const sorted = [...options.committees].sort((a, b) => (b.has_data - a.has_data) || a.name.localeCompare(b.name));
+  for (const c of sorted) select.add(new Option(c.name.replace(/^(Joint|House|Senate) Committee on /, "the $1 Committee on "), c.id));
+  const first = sorted.find((c) => c.has_data); if (first) select.value = first.id;
+  $("plan").onchange = renderPlan; select.onchange = renderPlan; renderPlan();
+  $("start").onclick = start;
+  $("back").onclick = () => { location.hash = ""; };
+  for (const b of document.querySelectorAll("[data-filter]")) b.onclick = () => {
+    filter = b.dataset.filter; shown = 50;
+    for (const o of document.querySelectorAll("[data-filter]")) o.setAttribute("aria-pressed", String(o === b));
+    renderBills(); };
+  $("search").oninput = () => { shown = 50; renderBills(); };
+  $("more").onclick = () => { shown += 50; renderBills(); };
+  window.onhashchange = route;
+  await Promise.all([loadOverview(), loadTimeline(), pollJob()]);
+  route();
+}
+
+function renderPlan() {
+  const plan = $("plan").value;
+  $("plan-explain").textContent = EXPLAIN[plan] + ($("committee").value === options.all_committees ? " Every committee takes much longer." : "");
+  if (!current) renderSteps(options.plans[plan], null, []);
+}
+
+function renderSteps(stages, active, done) {
+  $("steps").innerHTML = Object.keys(STEP).map((s) => {
+    const cls = !stages.includes(s) ? "skip" : done.includes(s) ? "done" : s === active ? "active" : "";
+    return `<li class="${cls}">${STEP[s]}</li>`; }).join("");
+}
+
+function setState(kind, word, now) {
+  $("dot").className = `dot ${kind}`; $("word").textContent = word; if (now != null) $("now").textContent = now;
+  $("progress").hidden = kind !== "running"; $("start").disabled = kind === "running";
+  if (kind !== "running") $("which").hidden = true;
+}
+
+function newRun(stages, committees) {
+  return {stages, committees: committees || [], position: 0, committee: null, active: null, done: []};
+}
+
+function renderWhich() {
+  const total = current.committees.length, box = $("which");
+  if (!current.committee) { box.hidden = true; return; }
+  box.hidden = false;
+  const name = esc(committeeName(current.committee));
+  if (total <= 1) { box.innerHTML = `<div class="who">${name}</div>`; return; }
+  const perCommittee = current.stages.filter((s) => s !== "reextract");
+  const fraction = perCommittee.length ? current.done.filter((s) => perCommittee.includes(s)).length / perCommittee.length : 0;
+  const overall = Math.min(total, current.position - 1 + fraction);
+  const next = current.committees[current.position];
+  const rest = total - current.position;
+  box.innerHTML = `<div class="count">Committee ${current.position} of ${total}</div><div class="who">${name}</div>
+    <progress max="${total}" value="${overall.toFixed(2)}" aria-label="Overall progress"></progress>
+    <div class="hint">${next ? `Next: ${esc(committeeName(next))}${rest > 1 ? `, then ${rest - 1} more` : ""}.` : "This is the last one."}</div>`;
+}
+
+async function start() {
+  const request = {plan: $("plan").value, committees: [$("committee").value], as_of: $("as-of").value || null, full: $("full").checked};
+  try {
+    await getJson("/api/runs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(request)});
+    current = newRun(options.plans[request.plan]);
+    renderSteps(current.stages, null, []); setState("running", "Running", "Starting...");
+  } catch (error) { $("start-note").textContent = `Could not start: ${error.message}`; }
+}
+
+async function pollJob() {
+  const job = await getJson("/api/job");
+  if (job.status === "running") {
+    const p = job.progress;
+    if (!current) current = newRun(options.plans[job.request.plan] || [job.request.stage], p ? p.committees : []);
+    if (p) {
+      Object.assign(current, {committees: p.committees, position: p.position, committee: p.committee_id, active: p.stage});
+      if (p.stage) $("now").textContent = `${DOING[p.stage] || p.stage}${p.stage_total ? `: ${p.done} of ${p.stage_total}` : ""}`;
+      renderSteps(current.stages, current.active, current.done); renderWhich();
+    }
+    return setState("running", "Running", null);
+  }
+  if (job.status === "succeeded") setState("done", "Done", "Finished. The results are up to date.");
+  else if (job.status === "failed") setState("failed", "Stopped", "The check stopped with an error. The log file has the details.");
+  else setState("", "Ready", "Nothing is running.");
+  if (current) { renderSteps(current.stages, null, job.status === "succeeded" ? current.stages : current.done); current = null; }
+}
+
+function committeeName(id) { const c = options.committees.find((x) => x.id === id); return c ? c.name : id; }
+
+function onEvent(e) {
+  if (!current) current = newRun(Object.keys(STEP));
+  if (e.kind === "plan_started") { current.stages = e.stages; current.committees = e.committees; }
+  if (e.kind === "committee_started") {
+    Object.assign(current, {position: e.position, committee: e.committee_id, active: null});
+    current.done = current.done.filter((s) => s === "reextract");
+  }
+  if (e.kind === "run_started" && e.stage === "collect" && e.scope === "committees") $("now").textContent = "Getting the list of committees";
+  else if (e.kind === "run_started") { current.active = e.stage; setState("running", "Running", DOING[e.stage] || e.stage); }
+  if (e.kind === "progress") {
+    const bar = $("progress");
+    if (e.total) { bar.max = e.total; bar.value = e.done; } else bar.removeAttribute("value");
+    $("now").textContent = `${DOING[e.stage] || e.stage}: ${e.done}${e.total ? " of " + e.total : ""}`;
+  }
+  if (e.kind === "run_finished" && !current.done.includes(e.stage)) current.done.push(e.stage);
+  if (e.kind === "run_finished" || e.kind === "plan_finished") loadTimeline();
+  if (e.kind === "plan_finished") { pollJob().then(loadOverview); return; }
+  renderSteps(current.stages, current.active, current.done); renderWhich();
+}
+
+async function loadOverview() {
+  overview = await getJson("/api/overview");
+  $("cards").innerHTML = overview.map((c) => {
+    const s = c.summary, yes = s.Compliant || 0, no = s["Non-Compliant"] || 0, wait = s.Provisional || 0, all = yes + no + wait || 1;
+    const pct = (n) => (100 * n / all).toFixed(1);
+    return `<div class="committee"><div class="name">${esc(c.name)}</div>
+      <div class="split" role="img" aria-label="${yes} followed every rule, ${no} missed a rule, ${wait} not yet known"><span class="s-yes" style="width:${pct(yes)}%"></span><span class="s-no" style="width:${pct(no)}%"></span><span class="s-wait" style="width:${pct(wait)}%"></span></div>
+      <div class="hint"><span class="yes">${yes} followed every rule</span> - <span class="no">${no} missed a rule</span>${wait ? ` - <span class="wait">${wait} not yet known</span>` : ""}. Checked ${esc(ago(c.as_of))}.</div>
+      <div class="links"><a href="#/committee/${esc(c.committee_id)}">Explore bills</a>${c.audit_url ? `<a href="${esc(c.audit_url)}" target="_blank" rel="noopener">Audit report</a>` : ""}</div></div>`;
+  }).join("") || '<span class="hint">No committee has been checked yet.</span>';
+}
+
+async function loadTimeline() {
+  const runs = (await getJson("/api/runs")).filter((r) => r.stage !== "report").slice(0, 8);
+  $("timeline").innerHTML = runs.map((r) => {
+    const kind = r.status === "succeeded" ? "done" : r.status === "failed" ? "failed" : "running";
+    const who = r.scope && r.scope !== "committees" && !r.scope.startsWith("history") ? ` - ${esc(committeeName(r.scope))}` : "";
+    const took = r.finished_at ? `, took ${Math.max(1, Math.round((new Date(r.finished_at) - new Date(r.started_at)) / 60000))} min` : "";
+    const state = kind === "done" ? "finished" : kind === "failed" ? "stopped with an error" : "in progress";
+    return `<li><span class="dot ${kind}"></span><div><div class="what">${esc(DOING[r.stage] || r.stage)}${who}</div><div class="when">${state}, ${esc(ago(r.started_at))}${took}</div></div></li>`;
+  }).join("") || '<li class="hint">Nothing has run yet.</li>';
+}
+
+function route() {
+  const match = location.hash.match(/^#\/committee\/(\w+)/);
+  $("control").hidden = !!match; $("explore").hidden = !match;
+  if (match) openCommittee(match[1]);
+  window.scrollTo(0, 0);
+}
+
+async function openCommittee(id) {
+  results = await getJson(`/api/committees/${encodeURIComponent(id)}/results`);
+  $("story").innerHTML = ""; filter = "all"; shown = 50; $("search").value = "";
+  for (const o of document.querySelectorAll("[data-filter]")) o.setAttribute("aria-pressed", String(o.dataset.filter === "all"));
+  const s = results.summary, card = overview.find((c) => c.committee_id === id);
+  $("explore-head").innerHTML = `<h1>${esc(results.committee_name)}</h1>
+    <p class="lede">${results.as_of ? `Checked ${esc(longDate(results.as_of))}.` : "Not checked yet."}${card && card.audit_url ? ` <a href="${esc(card.audit_url)}" target="_blank" rel="noopener">Open the full audit report</a>` : ""}</p>
+    <div class="stats"><div><div class="n no">${s["Non-Compliant"] || 0}</div>Missed a rule</div><div><div class="n yes">${s.Compliant || 0}</div>Followed every rule</div><div><div class="n wait">${s.Provisional || 0}</div>Not yet known</div></div>`;
+  renderBills();
+}
+
+function why(b) {
+  const misses = Object.entries(b.requirements).filter(([, r]) => r.status === "Unmet");
+  if (misses.length) return misses.map(([k]) => `Not ${(RULES[k] || [k, k])[1]}`).join("; ");
+  const open = Object.values(b.requirements).find((r) => r.status === "Provisional");
+  return open ? (REASON[open.reason] || "Not yet known.") : "";
+}
+
+function renderBills() {
+  if (!results) return;
+  const term = $("search").value.trim().toLowerCase().replace(/\./g, "");
+  const rows = results.bills.filter((b) => (filter === "all" || b.label === filter) &&
+    (!term || b.bill_id.toLowerCase().includes(term) || (b.title || "").toLowerCase().includes(term)));
+  $("bills").innerHTML = rows.slice(0, shown).map((b) => { const [label, cls] = LABEL[b.label] || [b.label, ""];
+    return `<tr><td><button class="linkish" data-bill="${esc(b.bill_id)}">${esc(billLabel(b.bill_id))}</button></td><td>${esc(b.title)}</td><td class="${cls}"><strong>${esc(label)}</strong></td><td>${esc(why(b))}</td></tr>`; }).join("")
+    || '<tr><td colspan="4" class="hint">No bills match.</td></tr>';
+  $("more").hidden = rows.length <= shown;
+  for (const btn of document.querySelectorAll("#bills [data-bill]")) btn.onclick = () => openBill(btn.dataset.bill);
+}
+
+async function openBill(billId) {
+  const bill = await getJson(`/api/bills/${encodeURIComponent(billId)}?committee=${encodeURIComponent(results.committee_id)}`);
+  const e = bill.evaluations[bill.evaluations.length - 1];
+  const items = (e ? e.results : []).map((r) => { const [answer, cls] = ANSWER[r.status] || [r.status, ""];
+    const rule = r.derivation.find((s) => s.clause_text);
+    const wait = r.status === "Provisional" ? ` ${REASON[r.reason] || ""}${r.resolves_on ? ` Settles after ${longDate(r.resolves_on)}.` : ""}` : "";
+    return `<div class="item"><strong>${esc((RULES[r.requirement_id] || [r.requirement_id])[0])}:</strong> <strong class="${cls}">${answer}</strong>
+      <div>${esc(plain(r.detail))}.${esc(wait)}</div>${rule ? `<details><summary>Read the rule</summary><blockquote>${esc(rule.clause_text)}</blockquote></details>` : ""}</div>`; }).join("");
+  const [label, cls] = e ? (LABEL[e.label] || [e.label, ""]) : ["Not checked", ""];
+  $("story").innerHTML = `<article class="story" tabindex="-1" id="story-article"><h2>${esc(billLabel(bill.bill_id))}: ${esc(bill.title || "")}</h2>
+    <p><strong class="${cls}">${esc(label)}</strong>${bill.url ? ` - <a href="${esc(bill.url)}" target="_blank" rel="noopener">View on malegislature.gov</a>` : ""}</p>
+    ${bill.origin ? `<p class="hint">Produced by the committee from ${esc(bill.origin.source_bills.map(billLabel).join(", "))}; not judged on its own.</p>` : ""}
+    ${items || '<p class="hint">This bill has not been checked.</p>'}</article>`;
+  $("story-article").focus(); $("story-article").scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+new EventSource("/api/events").onmessage = (m) => onEvent(JSON.parse(m.data));
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+
+<div class="tab-pane active customFade in billList" role="tabpanel" aria-label="Bills Tab">
+    <!-- DEVS - use tableToggle functionality similar to Legislator's sponsored & unsponsored bills -->
+    <div class="tableToggle">
+        <a onclick="return reloadAjaxContent(null, null, true);" class="" aria-label="Display bills currently in committee">Currently In Committee</a>
+        <span>&nbsp;|&nbsp;</span>
+        <a onclick="return reloadAjaxContent(null, null, false);" class="current" aria-label="Display bills reported out of committee">Reported Out Of Committee</a>
+    </div>
+
+    <div id="searchResults">
+        <div class="row">
+            <div class="form-group col-xs-12 col-md-5">
+                <label for="searchTerms">Search by bill number</label>
+                <input value="" type="text" id="searchTerms" class="form-control" />
+            </div>
+            <div class="col-xs-12 col-md-3">
+                <button type="button" class="btn btn-primary inlineSearchButton" onclick="return reloadAjaxContent(1);" aria-label="Bill Search">Search Bills</button>
+            </div>
+        </div>
+        <hr />
+            <!-- Display Bills currently in committee if tableToggle selects bills currentently in committee -->
+                    <p class="well">There are no bills reported out in the current General Court. </p>
+    </div>
+
+
+    <script>
+            
+        $('#searchTerms').on('keyup',
+            function (event) {
+                event.preventDefault();
+                if (event.keyCode === 13) {
+                    reloadAjaxContent(1);
+                }
+            });
+
+        function reloadAjaxContent(page, $this, current) {
+            if (current === null || current === undefined) {
+                current = 'False';
+            }
+
+            var elementsToReplace = '.customFade';
+            var elementsTofade = '.customFade';
+            var searchTerm = $('#searchTerms').val() ? $('#searchTerms').val() :"";
+            var url = '/Committees/Detail/J19/194/Bills';
+            if ($this === null || $this === undefined) {
+                url += '/' + 'asc' + '/' + 'EntityNumber/' + searchTerm + '?current=' + current;
+            }
+            else {
+                url += '/' + $this.attr('data-sortdirection') + '/' + $this.attr('data-managedproperty')+ '/' + searchTerm + '?current=' + current;
+            }
+            if (page == null)
+                 page = 1;
+             url += '&pageNumber=' + page;
+
+             history.pushState(true, null, url);
+             ExecuteAction(this, elementsToReplace, url, null, false, function () {
+                 fadeInContent(elementsTofade);
+                 checkPageNumber();
+             });
+             return false;
+        };
+
+        // Initialize Popover for report type
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                container: 'body',
+                html: true,
+                animation: false,
+                placement: 'right',
+                trigger: 'manual'
+            }).on("mouseenter", function () {
+                var _this = this;
+                $(this).popover("show");
+                $(".popover").on("mouseleave", function () {
+                    $(_this).popover('hide');
+                });
+            }).on("mouseleave", function () {
+                var _this = this;
+                setTimeout(function () {
+                    if (!$(".popover:hover").length) {
+                        $(_this).popover("hide");
+                    }
+                }, 300);
+            });
+        });
+
+    </script>
+</div>
+
+<script src="/Scripts/search.min.js?v=U30Ycjq9Ejgd9ntIEPeRCvCkWvDxfRK2pnGlqCZOCy4"></script>

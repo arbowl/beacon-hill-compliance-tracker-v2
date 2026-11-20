@@ -1,0 +1,647 @@
+
+<div class="tab-pane active customFade in billList" role="tabpanel" aria-label="Bills Tab">
+    <!-- DEVS - use tableToggle functionality similar to Legislator's sponsored & unsponsored bills -->
+    <div class="tableToggle">
+        <a onclick="return reloadAjaxContent(null, null, true);" class="" aria-label="Display bills currently in committee">Currently In Committee</a>
+        <span>&nbsp;|&nbsp;</span>
+        <a onclick="return reloadAjaxContent(null, null, false);" class="current" aria-label="Display bills reported out of committee">Reported Out Of Committee</a>
+    </div>
+
+    <div id="searchResults">
+        <div class="row">
+            <div class="form-group col-xs-12 col-md-5">
+                <label for="searchTerms">Search by bill number</label>
+                <input value="" type="text" id="searchTerms" class="form-control" />
+            </div>
+            <div class="col-xs-12 col-md-3">
+                <button type="button" class="btn btn-primary inlineSearchButton" onclick="return reloadAjaxContent(1);" aria-label="Bill Search">Search Bills</button>
+            </div>
+        </div>
+        <hr />
+            <!-- Display Bills currently in committee if tableToggle selects bills currentently in committee -->
+                    <div class="row">
+                        <div class="col-xs-12 col-md-6">
+                            <div class="searchResultSummary">Displaying 1 to 25 of 846 Bills</div>
+                        </div>
+                        <div class="col-xs-12 col-md-6 paginationContainer">
+        <nav aria-label="Results pages">
+            <ul class="pagination pagination-sm">
+                <li class="disabled">
+                    <a href="" onclick="" aria-disabled="true">
+                        <span class="icon-white">&laquo;</span><span class="sr-only"> First page</span>
+                    </a>
+                </li>
+                <li class="disabled">
+                    <a href="" onclick="" aria-disabled="true">
+                        <span class="icon-white">&lsaquo;</span><span class="sr-only"> Previous page</span>
+                    </a>
+                </li>
+                        <li class="active">
+                            <span aria-current="page"><span class="sr-only">Page </span>1</span>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(2);">
+                                <span class="sr-only">Page </span>2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(3);">
+                                <span class="sr-only">Page </span>3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(4);">
+                                <span class="sr-only">Page </span>4
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(5);">
+                                <span class="sr-only">Page </span>5
+                            </a>
+                        </li>
+                <li class="">
+                    <a href="javascript:void(0)" onclick="return reloadAjaxContent(2);" aria-disabled="false">
+                        <span class="">&rsaquo;</span><span class="sr-only"> Next page</span>
+                    </a>
+                </li>
+                <li class="">
+                    <a href="javascript:void(0)" onclick="return reloadAjaxContent(34);" aria-disabled="false">
+                        <span class="">&raquo;</span><span class="sr-only"> Last page</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+</div>
+                    </div>
+                    <!-- Display Bills reported out of committee if tableToggle selects bills reported out of committee -->
+                    <table class="table table-condensed table-dark table-striped committeeBillsTable">
+                        <caption class="sr-only">Committee Bills</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class='sr-only'>Follow In My Legislature</span></th>
+                                
+<th scope="col" aria-sort="ascending" class="sortCol " data-managedproperty="EntityNumber" data-sortdirection = "asc">
+    <button>
+        Bill No.
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                fa-sort-up
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                <th scope="col" class="titleCol">Bill Title</th>
+                                
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="SponsorName" data-sortdirection = "">
+    <button>
+        Sponsor
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                                
+<th scope="col" aria-sort="" class="sortCol " data-managedproperty="ReportingType" data-sortdirection = "">
+    <button>
+        Report Type
+        <!--
+        Changed structure to achieve stacking
+        JS will need to be edited for it to work correctly - MD
+         -->
+        <span class="fa-stack">
+            <span class="fa fa-sort fa-stack-1x"></span>
+            <span class="fa directionArrow
+                
+            fa-stack-1x">
+            </span>
+        </span>
+    </button>
+</th>
+
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution for term renewal process" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S9">S.9&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution for term renewal process</td>
+                                    <td>
+<a href="/Legislators/Profile/jml0" aria-label="Go to Lewis, Jason M. (SEN)'s Profile">Lewis, Jason M. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution to define the succession plan for a vacancy in the office of Lieutenant Governor&#xD;&#xA;" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S10">S.10&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution to define the succession plan for a vacancy in the office of Lieutenant Governor&#xD;&#xA;</td>
+                                    <td>
+<a href="/Legislators/Profile/PWM0" aria-label="Go to Mark, Paul W. (SEN)'s Profile">Mark, Paul W. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution for a Constitutional right to health care&#xD;&#xA;" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H64">H.64&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution for a Constitutional right to health care&#xD;&#xA;</td>
+                                    <td>
+<a href="/Legislators/Profile/MSD1" aria-label="Go to Day, Michael S. (HOU)'s Profile">Day, Michael S. (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution relative to oaths of office" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H66">H.66&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution relative to oaths of office</td>
+                                    <td>
+<a href="/Legislators/Profile/K_D1" aria-label="Go to Donaghue, Kate (HOU)'s Profile">Donaghue, Kate (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution prohibiting eminent domain takings" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H67">H.67&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution prohibiting eminent domain takings</td>
+                                    <td>
+<a href="/Legislators/Profile/BHJ1" aria-label="Go to Jones, Jr., Bradley H. (HOU)'s Profile">Jones, Jr., Bradley H. (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution relative to changing the mandatory age of retirement for judges" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H68">H.68&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution relative to changing the mandatory age of retirement for judges</td>
+                                    <td>
+<a href="/Legislators/Profile/P_M1" aria-label="Go to McMurtry, Paul (HOU)'s Profile">McMurtry, Paul (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: Proposal for a legislative amendment to the Constitution to define the succession plan for a vacancy in the office of Lieutenant Governor" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H69">H.69&nbsp;</a></td>
+                                    <td>Proposal for a legislative amendment to the Constitution to define the succession plan for a vacancy in the office of Lieutenant Governor</td>
+                                    <td>
+<a href="/Legislators/Profile/SLG1" aria-label="Go to Whipps, Susannah M. (HOU)'s Profile">Whipps, Susannah M. (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Adverse</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to bonded warehouses" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S288">S.288&nbsp;</a></td>
+                                    <td>An Act relative to bonded warehouses</td>
+                                    <td>
+<a href="/Legislators/Profile/BET0" aria-label="Go to Tarr, Bruce E. (SEN)'s Profile">Tarr, Bruce E. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to supporting survivors of child sexual abuse" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S404">S.404&nbsp;</a></td>
+                                    <td>An Act relative to supporting survivors of child sexual abuse</td>
+                                    <td>
+<a href="/Legislators/Profile/JBL0" aria-label="Go to Lovely, Joan B. (SEN)'s Profile">Lovely, Joan B. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S2886">S.2886</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act establishing employee screening requirements in schools to prevent child sexual abuse" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H516">H.516&nbsp;</a></td>
+                                    <td>An Act establishing employee screening requirements in schools to prevent child sexual abuse</td>
+                                    <td>
+<a href="/Legislators/Profile/NMB1" aria-label="Go to Blais, Natalie M. (HOU)'s Profile">Blais, Natalie M. (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/H5146">H.5146</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to protect children from adults in positions of authority or trust  " aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/H573">H.573&nbsp;</a></td>
+                                    <td>An Act to protect children from adults in positions of authority or trust  </td>
+                                    <td>
+<a href="/Legislators/Profile/CAF1" aria-label="Go to Fiola, Carole A. (HOU)'s Profile">Fiola, Carole A. (HOU)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied</span>
+                                                <a target="_blank" href="/Bills/194/H4538">H.4538</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act improving juror compensation" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1028">S.1028&nbsp;</a></td>
+                                    <td>An Act improving juror compensation</td>
+                                    <td>
+<a href="/Legislators/Profile/MJB0" aria-label="Go to Barrett, Michael J. (SEN)'s Profile">Barrett, Michael J. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to eliminate the public counsel fee" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1029">S.1029&nbsp;</a></td>
+                                    <td>An Act to eliminate the public counsel fee</td>
+                                    <td>
+<a href="/Legislators/Profile/MJB0" aria-label="Go to Barrett, Michael J. (SEN)'s Profile">Barrett, Michael J. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S2886">S.2886</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to increase transparency in the Massachusetts land record systems to protect the property rights of homeowners and businesses" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1030">S.1030&nbsp;</a></td>
+                                    <td>An Act to increase transparency in the Massachusetts land record systems to protect the property rights of homeowners and businesses</td>
+                                    <td>
+<a href="/Legislators/Profile/MDB0" aria-label="Go to Brady, Michael D. (SEN)'s Profile">Brady, Michael D. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act to amend the foreclosure statute to require judicial foreclosure" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1031">S.1031&nbsp;</a></td>
+                                    <td>An Act to amend the foreclosure statute to require judicial foreclosure</td>
+                                    <td>
+<a href="/Legislators/Profile/MDB0" aria-label="Go to Brady, Michael D. (SEN)'s Profile">Brady, Michael D. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S2886">S.2886</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to child-centered family law" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1032">S.1032&nbsp;</a></td>
+                                    <td>An Act relative to child-centered family law</td>
+                                    <td>
+<a href="/Legislators/Profile/MDB0" aria-label="Go to Brady, Michael D. (SEN)'s Profile">Brady, Michael D. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S2886">S.2886</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to advertising for justices of the peace" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1033">S.1033&nbsp;</a></td>
+                                    <td>An Act relative to advertising for justices of the peace</td>
+                                    <td>
+<a href="/Legislators/Profile/WNB0" aria-label="Go to Brownsberger, William N. (SEN)'s Profile">Brownsberger, William N. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to archaic laws" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1034">S.1034&nbsp;</a></td>
+                                    <td>An Act relative to archaic laws</td>
+                                    <td>
+<a href="/Legislators/Profile/WNB0" aria-label="Go to Brownsberger, William N. (SEN)'s Profile">Brownsberger, William N. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to increasing transparency in juvenile court proceedings" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1035">S.1035&nbsp;</a></td>
+                                    <td>An Act relative to increasing transparency in juvenile court proceedings</td>
+                                    <td>
+<a href="/Legislators/Profile/WNB0" aria-label="Go to Brownsberger, William N. (SEN)'s Profile">Brownsberger, William N. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S3199">S.3199</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to liability for accidents and collisions with vulnerable road users involving large motor vehicles and trailers " aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1036">S.1036&nbsp;</a></td>
+                                    <td>An Act relative to liability for accidents and collisions with vulnerable road users involving large motor vehicles and trailers </td>
+                                    <td>
+<a href="/Legislators/Profile/WNB0" aria-label="Go to Brownsberger, William N. (SEN)'s Profile">Brownsberger, William N. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act related to indigency" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1037">S.1037&nbsp;</a></td>
+                                    <td>An Act related to indigency</td>
+                                    <td>
+<a href="/Legislators/Profile/WNB0" aria-label="Go to Brownsberger, William N. (SEN)'s Profile">Brownsberger, William N. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to the protection of small businesses and workers" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1038">S.1038&nbsp;</a></td>
+                                    <td>An Act relative to the protection of small businesses and workers</td>
+                                    <td>
+<a href="/Legislators/Profile/WNB0" aria-label="Go to Brownsberger, William N. (SEN)'s Profile">Brownsberger, William N. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to the statute of limitations in rape, assault and human trafficking crimes" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1040">S.1040&nbsp;</a></td>
+                                    <td>An Act relative to the statute of limitations in rape, assault and human trafficking crimes</td>
+                                    <td>
+<a href="/Legislators/Profile/N_C0" aria-label="Go to Collins, Nick (SEN)'s Profile">Collins, Nick (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S2886">S.2886</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act relative to life saving treatment" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1042">S.1042&nbsp;</a></td>
+                                    <td>An Act relative to life saving treatment</td>
+                                    <td>
+<a href="/Legislators/Profile/N_C0" aria-label="Go to Collins, Nick (SEN)'s Profile">Collins, Nick (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Favorable</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+            <a tabindex="0" role="button" class="enterClick star" aria-label="Follow in MyLegislature: An Act encouraging the donation of food to persons in need" aria-pressed="false" data-target="#exclusiveFeatureModal" data-toggle="modal" title="Follow in MyLegislature" aria-haspopup="true">
+                <span class="fa fa-star fa-fw mlNotFollowing"></span>
+            </a>
+</td>
+                                    <td><a target="_blank" href="/Bills/194/S1043">S.1043&nbsp;</a></td>
+                                    <td>An Act encouraging the donation of food to persons in need</td>
+                                    <td>
+<a href="/Legislators/Profile/JMC0" aria-label="Go to Comerford, Joanne M. (SEN)'s Profile">Comerford, Joanne M. (SEN)</a>                                    </td>
+                                    <td>
+
+                                                    <span>Accompanied a Study</span>
+                                                <a target="_blank" href="/Bills/194/S3199">S.3199</a>
+                                    </td>
+                                </tr>
+                        </tbody>
+                    </table>
+                    <div class="tableCaption pull-right"><sup>S </sup> — Pending in the Senate Clerk's Office</div> <br />
+                    <div class="tableCaption pull-right"><sup>H </sup> — Pending in the House Clerk's Office</div>
+                    <div class="col-xs-12 col-md-6 paginationContainer">
+        <nav aria-label="Results pages">
+            <ul class="pagination pagination-sm">
+                <li class="disabled">
+                    <a href="" onclick="" aria-disabled="true">
+                        <span class="icon-white">&laquo;</span><span class="sr-only"> First page</span>
+                    </a>
+                </li>
+                <li class="disabled">
+                    <a href="" onclick="" aria-disabled="true">
+                        <span class="icon-white">&lsaquo;</span><span class="sr-only"> Previous page</span>
+                    </a>
+                </li>
+                        <li class="active">
+                            <span aria-current="page"><span class="sr-only">Page </span>1</span>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(2);">
+                                <span class="sr-only">Page </span>2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(3);">
+                                <span class="sr-only">Page </span>3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(4);">
+                                <span class="sr-only">Page </span>4
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0);" onclick="return reloadAjaxContent(5);">
+                                <span class="sr-only">Page </span>5
+                            </a>
+                        </li>
+                <li class="">
+                    <a href="javascript:void(0)" onclick="return reloadAjaxContent(2);" aria-disabled="false">
+                        <span class="">&rsaquo;</span><span class="sr-only"> Next page</span>
+                    </a>
+                </li>
+                <li class="">
+                    <a href="javascript:void(0)" onclick="return reloadAjaxContent(34);" aria-disabled="false">
+                        <span class="">&raquo;</span><span class="sr-only"> Last page</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+</div>
+    </div>
+
+
+    <script>
+            
+        $('#searchTerms').on('keyup',
+            function (event) {
+                event.preventDefault();
+                if (event.keyCode === 13) {
+                    reloadAjaxContent(1);
+                }
+            });
+
+        function reloadAjaxContent(page, $this, current) {
+            if (current === null || current === undefined) {
+                current = 'False';
+            }
+
+            var elementsToReplace = '.customFade';
+            var elementsTofade = '.customFade';
+            var searchTerm = $('#searchTerms').val() ? $('#searchTerms').val() :"";
+            var url = '/Committees/Detail/J19/194/Bills';
+            if ($this === null || $this === undefined) {
+                url += '/' + 'asc' + '/' + 'EntityNumber/' + searchTerm + '?current=' + current;
+            }
+            else {
+                url += '/' + $this.attr('data-sortdirection') + '/' + $this.attr('data-managedproperty')+ '/' + searchTerm + '?current=' + current;
+            }
+            if (page == null)
+                 page = 1;
+             url += '&pageNumber=' + page;
+
+             history.pushState(true, null, url);
+             ExecuteAction(this, elementsToReplace, url, null, false, function () {
+                 fadeInContent(elementsTofade);
+                 checkPageNumber();
+             });
+             return false;
+        };
+
+        // Initialize Popover for report type
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                container: 'body',
+                html: true,
+                animation: false,
+                placement: 'right',
+                trigger: 'manual'
+            }).on("mouseenter", function () {
+                var _this = this;
+                $(this).popover("show");
+                $(".popover").on("mouseleave", function () {
+                    $(_this).popover('hide');
+                });
+            }).on("mouseleave", function () {
+                var _this = this;
+                setTimeout(function () {
+                    if (!$(".popover:hover").length) {
+                        $(_this).popover("hide");
+                    }
+                }, 300);
+            });
+        });
+
+    </script>
+</div>
+
+<script src="/Scripts/search.min.js?v=U30Ycjq9Ejgd9ntIEPeRCvCkWvDxfRK2pnGlqCZOCy4"></script>
