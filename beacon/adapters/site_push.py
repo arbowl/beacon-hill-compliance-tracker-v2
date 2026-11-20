@@ -81,8 +81,11 @@ def _reply[T: BaseModel](response: httpx.Response, model: type[T]) -> T:
             return model.model_validate_json(response.content)
         error = v1.ErrorBody.model_validate_json(response.content).error
     except ValidationError as exc:
+        request = response.request
+        kind = response.headers.get("content-type", "no content type").split(";")[0]
         raise PushError(
-            f"HTTP {response.status_code}: unexpected reply ({exc})"
+            f"HTTP {response.status_code} for {request.method} {request.url.path}:"
+            f" the site did not reply as the ingest API does ({kind})"
         ) from exc
     details = "; ".join(f"{'.'.join(map(str, d.loc))}: {d.msg}" for d in error.details)
     raise PushError(

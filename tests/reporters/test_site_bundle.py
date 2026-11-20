@@ -176,3 +176,28 @@ def test_roll_up_matches_contract(statuses: tuple[RequirementStatus, ...]):
     ]
     contract = v1.roll_up(v1.RequirementStatus(s.value) for s in statuses)
     assert default_roll_up(results).value == contract.value
+
+
+def test_push_names_the_request_when_reply_is_not_the_api():
+    transport = httpx.MockTransport(
+        lambda r: httpx.Response(
+            404, content=b"<!doctype html>", headers={"content-type": "text/html"}
+        )
+    )
+    client = httpx.Client(base_url="https://site.test", transport=transport)
+    with pytest.raises(PushError, match=r"^HTTP 404 for PUT /api/ingest/v1/changelog"):
+        SitePusher(client).push_changelog(
+            v1.Changelog.model_validate(
+                {
+                    "schema_version": 1,
+                    "code_version": "0.1.0",
+                    "releases": [
+                        {
+                            "version": "0.1.0",
+                            "released_on": "2026-11-19",
+                            "sections": [{"kind": "Added", "items": ["x"]}],
+                        }
+                    ],
+                }
+            )
+        )

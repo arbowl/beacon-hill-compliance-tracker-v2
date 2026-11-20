@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 from beacon.adapters.clock import SystemClock
 from beacon.adapters.run_lock import RunLock, RunLockedError
-from beacon.adapters.site_push import bundle_committees
+from beacon.adapters.site_push import PushError, bundle_committees
 from beacon.config import Settings
 from beacon.domain.events import (
     CommitteeStarted,
@@ -199,9 +199,12 @@ class JobManager:
                 self._set_phase(phase)
                 with RunLock(self._settings.data_dir):
                     pushed = self._push_function(committees)
+        except PushError as exc:
+            _log.warning("Push refused: %s", exc)
+            error = str(exc) or repr(exc)
         except Exception as exc:
             _log.exception("Job %s failed during %s", request, phase)
-            error = (str(exc) if phase == JobPhase.PUSH else "") or repr(exc)
+            error = repr(exc)
         state = JobState(
             status=JobStatus.SUCCEEDED if error is None else JobStatus.FAILED,
             request=request,
