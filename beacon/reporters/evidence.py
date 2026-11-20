@@ -6,6 +6,7 @@ from beacon.domain.local_time import local_date
 from beacon.domain.observations import (
     BillHistoryPayload,
     CommitteeBillListPayload,
+    CommitteeDocumentsPayload,
     DocumentPayload,
     DocumentSearchPayload,
     HearingPayload,
@@ -91,6 +92,15 @@ def describe(
                 payload.hearing_date or seen_on,
                 f"Hearing {payload.hearing_id}, {held}; {len(payload.docket)} bills on "
                 f"the docket, {len(payload.documents)} documents attached",
+                capture.url,
+            )
+        case CommitteeDocumentsPayload():
+            covered = sum(1 for d in payload.documents if d.bill_ids)
+            return EvidenceItem(
+                EvidenceSource.COMMITTEE_DOCUMENTS,
+                seen_on,
+                f"Committee Documents tab: {len(payload.documents)} documents, "
+                f"{covered} naming bills",
                 capture.url,
             )
         case CommitteeBillListPayload():

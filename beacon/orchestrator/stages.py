@@ -15,7 +15,7 @@ from uuid import UUID
 from beacon.adapters.events import EventBus
 from beacon.adapters.site import normalized_hash
 from beacon.adapters.sqlite_store import SqliteStore
-from beacon.collector import committee_bills, hearings
+from beacon.collector import committee_bills, committee_documents, hearings
 from beacon.collector import committees as committee_lists
 from beacon.config import Settings
 from beacon.domain.captures import Capture
@@ -26,6 +26,8 @@ from beacon.domain.ids import BillKey, CommitteeKey
 from beacon.domain.inventory import BillRecord, CommitteeRecord
 from beacon.domain.observations import (
     BillHistoryPayload,
+    CommitteeDocument,
+    CommitteeDocumentsPayload,
     DocumentKind,
     DocumentSearchPayload,
     HearingDocument,
@@ -326,6 +328,47 @@ def _collect_hearings(ctx: Context, key: CommitteeKey, tracker: Tracker) -> int:
     return len(hearing_ids)
 
 
+def _collect_committee_documents(
+    ctx: Context, key: CommitteeKey, tracker: Tracker
+) -> int:
+    """Record the committee's Documents tab, reading each listed document once."""
+    s = ctx.settings
+    url = committee_documents.documents_url(s.base_url, key.committee_id, s.session)
+    result, body = _fetch(ctx, url, tracker.run_id)
+    if body is None:
+        raise StageError(
+            f"Documents tab failed with status {result.capture.http_status}"
+        )
+    listed = committee_documents.parse_documents_tab(body, s.base_url)
+    consulted, found = [], []
+    for item in listed:
+        document = _fetch_once(ctx, item.url, tracker.run_id)
+        if document is None:
+            tracker.fail(item.title, "document fetch failed")
+        else:
+            consulted.append(document.capture)
+        found.append(
+            committee_documents.committee_document(
+                item, document.body if document else None
+            )
+        )
+    capture = result.capture
+    if not ctx.store.observations.exists(
+        capture.capture_id,
+        committee_documents.EXTRACTOR_ID,
+        committee_documents.EXTRACTOR_VERSION,
+    ):
+        ctx.store.observations.append_many(
+            [
+                committee_documents.extract(
+                    capture, tuple(found), tuple(consulted), s.session, key.committee_id
+                )
+            ]
+        )
+    tracker.step("documents tab", "committee_documents")
+    return len(listed)
+
+
 def collect_committees(ctx: Context) -> list[str]:
     """Record every committee listed for each chamber; returns their ids."""
     s = ctx.settings
@@ -353,7 +396,7 @@ def collect_committees(ctx: Context) -> list[str]:
 
 
 def collect(ctx: Context, committee_id: str) -> UUID:
-    """Record the committee, every bill listed for it, and its hearings.
+    """Record the committee, every bill listed for it, its hearings and documents.
 
     The site lists bills still in committee and bills that have left it
     separately; inventory is the union.
@@ -378,7 +421,13 @@ def collect(ctx: Context, committee_id: str) -> UUID:
             pages += listing_pages
             seen |= bill_ids
         heard = _collect_hearings(ctx, key, tracker)
-        return {"pages": pages, "bills": len(seen), "hearings": heard}
+        posted = _collect_committee_documents(ctx, key, tracker)
+        return {
+            "pages": pages,
+            "bills": len(seen),
+            "hearings": heard,
+            "committee_documents": posted,
+        }
 
     return _run(ctx, Stage.COLLECT, work, scope=key.committee_id)
 
@@ -407,6 +456,31 @@ def _hearing_index(
         for document in o.payload.documents:
             for bill_id in document.bill_ids:
                 index.setdefault(bill_id, []).append(document)
+    return index
+
+
+def _committee_document_index(
+    ctx: Context, committee_id: str, as_of: datetime | None = None
+) -> dict[str, list[CommitteeDocument]] | None:
+    """Documents tab entries per bill, from the latest observation by as_of.
+
+    None when the committee's Documents tab had not been observed by as_of.
+    """
+    latest: Observation | None = None
+    for o in ctx.store.observations.of_kind(ObservationKind.COMMITTEE_DOCUMENTS):
+        if o.committee_id != committee_id:
+            continue
+        if as_of is not None and o.observed_at > as_of:
+            continue
+        if latest is None or o.observed_at >= latest.observed_at:
+            latest = o
+    if latest is None:
+        return None
+    assert isinstance(latest.payload, CommitteeDocumentsPayload)
+    index: dict[str, list[CommitteeDocument]] = {}
+    for document in latest.payload.documents:
+        for bill_id in document.bill_ids:
+            index.setdefault(bill_id, []).append(document)
     return index
 
 
@@ -445,6 +519,7 @@ class _ScrapeShared:
     """State shared by every bill in one scrape run."""
 
     hearing_index: dict[str, list[HearingDocument]] | None
+    committee_document_index: dict[str, list[CommitteeDocument]] | None
     tab_cache: _TabCache
     open_bills: frozenset[str]
     last_full: dict[str, datetime]
@@ -463,6 +538,11 @@ class _ScrapeShared:
         if last is None or last < self.sweep_before:
             return "sweep"
         return None
+
+
+def _for_bill[T](index: dict[str, list[T]] | None, bill_id: str) -> list[T] | None:
+    """A bill's entries; None (not an empty list) when the source was never read."""
+    return None if index is None else index.get(bill_id, [])
 
 
 def _observe_documents(
@@ -498,11 +578,8 @@ def _observe_documents(
             body,
             document_plan,
             fetched,
-            (
-                None
-                if shared.hearing_index is None
-                else shared.hearing_index.get(bill.bill_id, [])
-            ),
+            _for_bill(shared.hearing_index, bill.bill_id),
+            _for_bill(shared.committee_document_index, bill.bill_id),
             bill.session,
             bill.bill_id,
             committee_id,
@@ -590,6 +667,7 @@ def scrape(ctx: Context, committee_id: str, full: bool = False) -> UUID:
     bills = ctx.store.inventory.bills_for(ctx.settings.session, committee_id)
     shared = _ScrapeShared(
         hearing_index=_hearing_index(ctx, committee_id),
+        committee_document_index=_committee_document_index(ctx, committee_id),
         tab_cache=_TabCache(),
         open_bills=_open_bills(ctx, committee_id),
         last_full=_last_full_searches(ctx, committee_id),
@@ -658,7 +736,7 @@ def _reextract_documents(
             stored = ctx.store.captures.latest_for(url)
             if stored is not None and stored.content_hash is not None:
                 fetched[url] = Fetched(stored, ctx.blobs.get(stored.content_hash))
-    index = _hearing_index(ctx, committee_id, as_of=bill_capture.requested_at)
+    at = bill_capture.requested_at
     _store_new(
         ctx,
         documents.observe(
@@ -666,7 +744,8 @@ def _reextract_documents(
             body,
             document_plan,
             fetched,
-            None if index is None else index.get(bill_id, []),
+            _for_bill(_hearing_index(ctx, committee_id, as_of=at), bill_id),
+            _for_bill(_committee_document_index(ctx, committee_id, as_of=at), bill_id),
             session,
             bill_id,
             committee_id,
@@ -723,10 +802,53 @@ def _reextract_hearing(ctx: Context, old: Observation) -> bool:
     return True
 
 
+def _stale_committee_documents(ctx: Context) -> list[Observation]:
+    """Documents tab observations older than the current extractor, one per capture."""
+    stale: dict[UUID, Observation] = {}
+    for o in ctx.store.observations.of_kind(ObservationKind.COMMITTEE_DOCUMENTS):
+        if o.extractor_version < committee_documents.EXTRACTOR_VERSION:
+            stale[o.capture_id] = o
+    return list(stale.values())
+
+
+def _reextract_committee_documents(ctx: Context, old: Observation) -> bool:
+    """Rebuild one Documents tab observation from stored captures; False if current."""
+    if ctx.store.observations.exists(
+        old.capture_id,
+        committee_documents.EXTRACTOR_ID,
+        committee_documents.EXTRACTOR_VERSION,
+    ):
+        return False
+    assert old.committee_id
+    capture = ctx.store.captures.get(old.capture_id)
+    if capture.content_hash is None:
+        return False
+    listed = committee_documents.parse_documents_tab(
+        ctx.blobs.get(capture.content_hash), ctx.settings.base_url
+    )
+    consulted, found = [], []
+    for item in listed:
+        stored = ctx.store.captures.latest_for(item.url)
+        body = None
+        if stored is not None and stored.content_hash is not None:
+            consulted.append(stored)
+            body = ctx.blobs.get(stored.content_hash)
+        found.append(committee_documents.committee_document(item, body))
+    _store_new(
+        ctx,
+        [
+            committee_documents.extract(
+                capture, tuple(found), tuple(consulted), old.session, old.committee_id
+            )
+        ],
+    )
+    return True
+
+
 def reextract(ctx: Context) -> UUID:
     """Re-run the current extractors over every stored capture, offline.
 
-    Hearings are rebuilt before documents, which depend on the hearing index.
+    Hearings and Documents tabs are rebuilt before documents, which depend on them.
     """
     prefix = f"{ctx.settings.base_url}/Bills/"
     captures = [
@@ -735,14 +857,19 @@ def reextract(ctx: Context) -> UUID:
         if c.content_hash is not None and _BILL_URL.search(c.url)
     ]
     stale_hearings = _stale_hearings(ctx)
+    stale_tabs = _stale_committee_documents(ctx)
     stale = _stale_document_sources(ctx)
 
     def work(tracker: Tracker) -> dict[str, int]:
-        added = skipped = documents_added = hearings_added = 0
+        added = skipped = documents_added = hearings_added = tabs_added = 0
         for old in stale_hearings:
             if _reextract_hearing(ctx, old):
                 hearings_added += 1
             tracker.step(str(old.capture_id), "hearings")
+        for old in stale_tabs:
+            if _reextract_committee_documents(ctx, old):
+                tabs_added += 1
+            tracker.step(str(old.capture_id), "committee_documents")
         for capture in captures:
             match = _BILL_URL.search(capture.url)
             if match is None or capture.content_hash is None:
@@ -769,14 +896,16 @@ def reextract(ctx: Context) -> UUID:
             "skipped": skipped,
             "documents_added": documents_added,
             "hearings_added": hearings_added,
+            "committee_documents_added": tabs_added,
         }
 
     scope = (
         f"history v{history.EXTRACTOR_VERSION}, "
         f"hearings v{hearings.EXTRACTOR_VERSION}, "
+        f"committee documents v{committee_documents.EXTRACTOR_VERSION}, "
         f"documents v{bill_tabs.FINDER_VERSION}"
     )
-    total = len(stale_hearings) + len(captures) + len(stale)
+    total = len(stale_hearings) + len(stale_tabs) + len(captures) + len(stale)
     return _run(ctx, Stage.REEXTRACT, work, scope=scope, total=total)
 
 

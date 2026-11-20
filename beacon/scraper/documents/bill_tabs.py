@@ -11,7 +11,7 @@ from beacon.domain.observations import DocumentCandidate, DocumentKind, VoteReco
 from beacon.scraper.history.committees import normalize_committee_name
 
 FINDER_ID = "bill_tabs"
-FINDER_VERSION = 7
+FINDER_VERSION = 8
 _TABS = {
     "CommitteeSummary": (DocumentKind.SUMMARY, "Committee Summary tab"),
     "PrimarySponsorSummary": (DocumentKind.SUMMARY, "Primary Sponsor Summary tab"),
@@ -107,7 +107,7 @@ def parse_vote_tab(body: bytes) -> list[CommitteeVote]:
     return votes
 
 
-VOTE_WORDING = re.compile(r"\bvotes?\b|roll[- ]?call", re.I)
+VOTE_WORDING = re.compile(r"\bvotes?\b|roll[- ]?call|\bpoll(?:s|ed)?\b", re.I)
 _REPORT_HREF = re.compile(r"/Reports/\d+/", re.I)
 
 

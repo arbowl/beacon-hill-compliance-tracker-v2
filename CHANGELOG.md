@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Findings can be published to the Tracker website. Each committee's latest results are
   uploaded together and appear on the site at the same moment.
 - These release notes are published on the Tracker website alongside the findings.
+- Vote records and bill summaries that a committee posts on its Documents tab, such as
+  poll results, now count as posted. Several committees publish their votes only there.
 
 ### Fixed
 

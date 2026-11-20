@@ -10,14 +10,13 @@ from bs4 import BeautifulSoup
 
 from beacon.adapters.documents import read_document
 from beacon.domain.captures import Capture
-from beacon.domain.ids import normalize_bill_id
+from beacon.domain.ids import bill_ids_in, normalize_bill_id
 from beacon.domain.observations import HearingDocument, HearingPayload, Observation
 
 EXTRACTOR_ID = "hearing"
-EXTRACTOR_VERSION = 2
+EXTRACTOR_VERSION = 3
 _HEARING_HREF = re.compile(r"/Events/Hearings/Detail/(\d+)")
 _BILL_HREF = re.compile(r"/Bills/\d+/([HS]\d+)", re.I)
-_TITLE_BILL = re.compile(r"\b([HS])\.?\s?(\d{1,5})\b")
 _EVENT_DATE = re.compile(
     r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
     r"[A-Za-z]+\s+\d{1,2},\s+\d{4}"
@@ -69,11 +68,6 @@ def parse_hearing_list(body: bytes) -> list[str]:
     return list(dict.fromkeys(ids))
 
 
-def _bills_in(text: str) -> tuple[str, ...]:
-    found = (f"{m.group(1)}{int(m.group(2))}" for m in _TITLE_BILL.finditer(text))
-    return tuple(dict.fromkeys(found))
-
-
 def parse_hearing(body: bytes, base_url: str, hearing_id: str) -> HearingPage:
     """Date, docket, and document links of a hearing detail page."""
     soup = BeautifulSoup(body, "html.parser")
@@ -95,7 +89,7 @@ def parse_hearing(body: bytes, base_url: str, hearing_id: str) -> HearingPage:
         query = parse_qs(urlsplit(href).query)
         title = (query.get("Title") or [link.get_text(" ", strip=True)])[0]
         documents.append(
-            ListedDocument(urljoin(base_url, href), title, _bills_in(title))
+            ListedDocument(urljoin(base_url, href), title, bill_ids_in(title))
         )
     unique = {d.url: d for d in documents}
     return HearingPage(

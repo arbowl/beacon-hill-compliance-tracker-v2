@@ -31,6 +31,16 @@ def test_hearing_with_per_bill_summaries():
     assert summary.url.startswith(f"{BASE}/Events/DownloadDocument?attachmentId=")
 
 
+def test_underscored_summary_title_names_its_bill():
+    body = (
+        b'<a href="/Events/DownloadDocument?attachmentId=1&amp;'
+        b'Title=H.0016_Summary_InspectorGeneralShapiro">Summary</a>'
+    )
+    (document,) = parse_hearing(body, BASE, "1").documents
+    assert document.title_bills == ("H16",)
+    assert not document.needs_content
+
+
 def test_hearing_with_packets():
     page = parse_hearing((PAGES / "hearing_5201.html").read_bytes(), BASE, "5201")
     assert page.hearing_date == date(2025, 6, 3)

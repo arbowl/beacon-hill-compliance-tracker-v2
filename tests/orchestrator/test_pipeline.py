@@ -12,7 +12,7 @@ from beacon.adapters.blobs import FileBlobStore
 from beacon.adapters.clock import FixedClock
 from beacon.adapters.fetchers import FixtureFetcher
 from beacon.adapters.sqlite_store import SqliteStore
-from beacon.collector import hearings
+from beacon.collector import committee_documents, hearings
 from beacon.collector.committee_bills import listing_url
 from beacon.config import Settings
 from beacon.domain.evaluation import RequirementStatus, StepRole
@@ -26,7 +26,7 @@ from beacon.domain.events import (
     RunFinished,
     RunStarted,
 )
-from beacon.domain.observations import ObservationKind
+from beacon.domain.observations import CommitteeDocumentsPayload, ObservationKind
 from beacon.evaluator.clauses import ClauseIndex
 from beacon.orchestrator import runner, stages
 from beacon.orchestrator.runner import RunRequest
@@ -42,6 +42,7 @@ BASE = "https://malegislature.gov"
 BILLS = ("H1768", "H1648", "H67", "S1168", "S1043", "H4783")
 COMMITTEE_DOCUMENTS = ("H4372", "H5281")
 AS_OF = datetime(2026, 11, 18, 17, tzinfo=UTC)
+DOCUMENTS_TAB = committee_documents.documents_url(BASE, "J19", 194)
 
 
 def listing_html(bill_ids: tuple[str, ...]) -> bytes:
@@ -66,6 +67,7 @@ def fixture_pages() -> dict[str, bytes]:
     pages[f"{BASE}/Events/Hearings/Detail/5123"] = (
         PAGES / "hearing_5123.html"
     ).read_bytes()
+    pages[DOCUMENTS_TAB] = (PAGES / "J19_Documents.html").read_bytes()
     pages[f"{BASE}/Reports/22939/Committee%20-%20Senate%20member%20votes.pdf"] = (
         PAGES / "report_22939.pdf"
     ).read_bytes()
@@ -221,6 +223,49 @@ def test_failed_listing_fails_the_run(ctx: Context):
         stages.collect(ctx, "J19")
 
 
+def test_failed_documents_tab_fails_the_run(ctx: Context):
+    assert isinstance(ctx.fetcher, FixtureFetcher)
+    del ctx.fetcher.pages[DOCUMENTS_TAB]
+    with pytest.raises(StageError, match="Documents tab"):
+        stages.collect(ctx, "J19")
+
+
+def test_documents_tab_vote_becomes_vote_evidence(ctx: Context):
+    assert isinstance(ctx.fetcher, FixtureFetcher)
+    report = f"{BASE}/Reports/1/H67%20Poll%20Vote.pdf"
+    ctx.fetcher.pages[DOCUMENTS_TAB] = (
+        b"<table><tbody><tr><td>4/20/2025</td><td>H67 Poll Vote</td>"
+        b'<td><a href="/Reports/1/H67%20Poll%20Vote.pdf">Download</a></td>'
+        b"</tr></tbody></table>"
+    )
+    ctx.fetcher.pages[report] = b"%PDF-unreadable"
+    stages.collect(ctx, "J19")
+    (tab,) = ctx.store.observations.of_kind(ObservationKind.COMMITTEE_DOCUMENTS)
+    stages.scrape(ctx, "J19")
+    run_id = stages.evaluate(ctx, "J19")
+    (h67,) = [
+        e for e in ctx.store.evaluations.for_run(run_id) if e.bill.bill_id == "H67"
+    ]
+    votes = next(r for r in h67.results if r.requirement_id == "votes_posted")
+    assert "No vote record found" not in (votes.detail or "")
+    searches = ctx.store.observations.for_bill(
+        194, "H67", ObservationKind.DOCUMENT_SEARCH
+    )
+    vote_search = next(
+        o.payload
+        for o in searches
+        if o.extractor_id.startswith("document_search:votes")
+    )
+    assert vote_search.exhaustive
+    assert vote_search.candidates[0].location == (
+        "Committee Documents tab: H67 Poll Vote, posted 2025-04-20"
+    )
+    assert isinstance(tab.payload, CommitteeDocumentsPayload)
+    (recorded,) = tab.payload.documents
+    assert recorded.bill_ids == ("H67",) and not recorded.from_content
+    assert len(tab.payload.consulted) == 1
+
+
 def test_report_requires_successful_evaluation(ctx: Context):
     assert stages.report(ctx, "J19", [JsonReporter()]) == []
     stages.collect(ctx, "J19")
@@ -305,6 +350,19 @@ def test_reextract_rebuilds_hearings_offline(ctx: Context, monkeypatch):
     assert ctx.store.runs.status(run_id) == RunStatus.SUCCEEDED
 
 
+def test_reextract_rebuilds_committee_documents_offline(ctx: Context, monkeypatch):
+    stages.collect(ctx, "J19")
+    current = committee_documents.EXTRACTOR_VERSION
+    monkeypatch.setattr(committee_documents, "EXTRACTOR_VERSION", current + 1)
+    run_id = stages.reextract(replace(ctx, fetcher=OfflineFetcher()))
+    versions = {
+        o.extractor_version
+        for o in ctx.store.observations.of_kind(ObservationKind.COMMITTEE_DOCUMENTS)
+    }
+    assert versions == {current, current + 1}
+    assert ctx.store.runs.status(run_id) == RunStatus.SUCCEEDED
+
+
 def _second_night(ctx: Context, full: bool = False) -> tuple[UUID, list[str]]:
     assert isinstance(ctx.fetcher, FixtureFetcher)
     assert isinstance(ctx.clock, FixedClock)
@@ -345,6 +403,7 @@ def test_document_reasons():
     recent = AS_OF - timedelta(days=1)
     shared = stages._ScrapeShared(
         hearing_index={},
+        committee_document_index={},
         tab_cache=stages._TabCache(),
         open_bills=frozenset({"H2"}),
         last_full={"H1": recent, "H2": recent, "H3": AS_OF - timedelta(days=30)},
@@ -381,6 +440,7 @@ def test_plan_reports_committee_progress(ctx: Context):
     ctx.fetcher.pages[listing_url(BASE, 194, "J45", 1, True)] = listing_html(())
     ctx.fetcher.pages[listing_url(BASE, 194, "J45", 1, False)] = listing_html(())
     ctx.fetcher.pages[f"{BASE}/Committees/Detail/J45/Hearings"] = b"<p></p>"
+    ctx.fetcher.pages[committee_documents.documents_url(BASE, "J45", 194)] = b"<p></p>"
     runner.execute(observed, RunRequest(plan="mvp", committees=("J19", "J45")))
     plan = [
         e

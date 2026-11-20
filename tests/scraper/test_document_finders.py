@@ -8,6 +8,7 @@ import pytest
 
 from beacon.domain.captures import Capture
 from beacon.domain.observations import (
+    CommitteeDocument,
     DocumentKind,
     DocumentPayload,
     DocumentSearchPayload,
@@ -40,13 +41,23 @@ def fetched(url: str, fixture: str) -> Fetched:
     return Fetched(capture(url), (PAGES / fixture).read_bytes())
 
 
-def run(bill_id: str, sources: dict[str, str], hearing_docs=()) -> dict:
+def run(
+    bill_id: str, sources: dict[str, str], hearing_docs=(), committee_docs=()
+) -> dict:
     url = f"{BASE}/Bills/194/{bill_id}"
     body = (PAGES / f"{bill_id}.html").read_bytes()
     document_plan = plan(body, url, BASE, 194, parse_history(body, bill_id), "J19")
     available = {u: fetched(u, f) for u, f in sources.items()}
     observations = observe(
-        capture(url), body, document_plan, available, hearing_docs, 194, bill_id, "J19"
+        capture(url),
+        body,
+        document_plan,
+        available,
+        hearing_docs,
+        committee_docs,
+        194,
+        bill_id,
+        "J19",
     )
     by_kind: dict = {}
     for o in observations:
@@ -153,17 +164,61 @@ def test_creation_date_dropped_when_another_source_lacks_one():
     assert summary["document"].created_at is None
 
 
-def test_no_hearing_data_means_not_exhaustive():
-    url = f"{BASE}/Bills/194/H67"
-    body = (PAGES / "H67.html").read_bytes()
-    document_plan = plan(body, url, BASE, 194, parse_history(body, "H67"), "J19")
-    observations = observe(
-        capture(url), body, document_plan, {}, None, 194, "H67", "J19"
+@pytest.mark.parametrize(
+    ("hearing_docs", "committee_docs"), [(None, ()), ((), None), (None, None)]
+)
+def test_uncollected_committee_source_means_not_exhaustive(
+    hearing_docs, committee_docs
+):
+    by_kind = run("H67", {}, hearing_docs, committee_docs)["by_kind"]
+    searches = [k["document_search"] for k in by_kind.values()]
+    assert len(searches) == 2 and not any(s.exhaustive for s in searches)
+
+
+def committee_doc(kind: DocumentKind | None, **fields) -> CommitteeDocument:
+    return CommitteeDocument(
+        url=f"{BASE}/Reports/23967/CPPL%20Poll%20Results%207.7.25.pdf",
+        title="CPPL Poll Results 7.7.25",
+        posted_on=date(2025, 7, 9),
+        document_kind=kind,
+        bill_ids=("H67",),
+        from_content=True,
+        created_at=datetime(2025, 7, 9, 16, 52, tzinfo=UTC),
+    ).model_copy(update=fields)
+
+
+def test_committee_documents_tab_vote_record():
+    by_kind = run("H67", {}, committee_docs=[committee_doc(DocumentKind.VOTES)])
+    assert by_kind["by_kind"][DocumentKind.SUMMARY]["document_search"].candidates == ()
+    votes = by_kind["by_kind"][DocumentKind.VOTES]
+    search = votes["document_search"]
+    assert search.exhaustive
+    assert "committee_documents_tab" in search.finders_tried
+    (candidate,) = search.candidates
+    assert candidate.finder_id == "committee_documents_tab"
+    assert candidate.location == (
+        "Committee Documents tab: CPPL Poll Results 7.7.25, posted 2025-07-09"
     )
-    searches = [
-        o.payload for o in observations if isinstance(o.payload, DocumentSearchPayload)
+    assert candidate.confidence == 0.85
+    assert votes["document"].created_at == datetime(2025, 7, 9, 16, 52, tzinfo=UTC)
+
+
+def test_committee_documents_tab_summary_and_unclassified():
+    docs = [
+        committee_doc(
+            DocumentKind.SUMMARY,
+            title="H.67 Summary",
+            posted_on=None,
+            from_content=False,
+        ),
+        committee_doc(None, title="Public Schedule of Hearings", bill_ids=()),
+        committee_doc(DocumentKind.VOTES, bill_ids=("H68",)),
     ]
-    assert searches and not any(s.exhaustive for s in searches)
+    by_kind = run("H67", {}, committee_docs=docs)["by_kind"]
+    (candidate,) = by_kind[DocumentKind.SUMMARY]["document_search"].candidates
+    assert candidate.location == "Committee Documents tab: H.67 Summary"
+    assert candidate.confidence == 0.95
+    assert by_kind[DocumentKind.VOTES]["document_search"].candidates == ()
 
 
 def test_summary_on_new_draft_committee_summary_tab():

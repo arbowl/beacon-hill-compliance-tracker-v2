@@ -6,6 +6,11 @@ from enum import StrEnum
 
 _BILL_RX = re.compile(r"^\s*([HS])\s*\.?\s*(\d+)\s*$", re.I)
 _COMMITTEE_RX = re.compile(r"^\s*([HSJ])\s*(\d+)\s*$", re.I)
+_BILL_MENTION = re.compile(
+    r"(?<![A-Za-z0-9])"
+    r"(?:([HS])\.?\s?|(House|Senate)\s*,?\s*(?:No\.?\s*)?)"
+    r"(\d{1,5})(?!\d)"
+)
 
 
 class Chamber(StrEnum):
@@ -29,6 +34,18 @@ def normalize_bill_id(raw: str) -> str:
     if not match:
         raise ValueError(f"Invalid bill id: {raw!r}")
     return f"{match.group(1).upper()}{int(match.group(2))}"
+
+
+def bill_ids_in(text: str) -> tuple[str, ...]:
+    """Bill ids mentioned in text, normalized, in order of first mention.
+
+    Matches 'H.1234', 'H. 1234', 'S1234', 'House 1234' and 'Senate, No. 1234'.
+    """
+    found = (
+        f"{(m.group(1) or m.group(2))[0]}{int(m.group(3))}"
+        for m in _BILL_MENTION.finditer(text)
+    )
+    return tuple(dict.fromkeys(found))
 
 
 def normalize_committee_id(raw: str) -> str:

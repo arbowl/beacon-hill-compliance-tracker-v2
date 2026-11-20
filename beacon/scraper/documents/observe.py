@@ -2,10 +2,10 @@
 
 Finders, in order: the bill page's tabs; report vote PDFs linked from the bill page;
 the Committee Vote tab of a new draft or study order the bill accompanied (except
-deadline study orders, which the chair reports without a vote); and documents
+deadline study orders, which the chair reports without a vote); documents
 attached to the committee's hearings, sorted into summaries and vote records by
-title. A search is exhaustive when every finder ran
-and none of its fetches failed.
+title; and documents on the committee's Documents tab, sorted when collected. A
+search is exhaustive when every finder ran and none of its fetches failed.
 """
 
 import re
@@ -19,6 +19,7 @@ from beacon.domain.captures import Capture
 from beacon.domain.observations import (
     ActionType,
     BillHistoryPayload,
+    CommitteeDocument,
     DocumentCandidate,
     DocumentKind,
     DocumentPayload,
@@ -34,12 +35,14 @@ HEARING_FINDER = "hearing_documents"
 REPORT_FINDER = "report_vote_pdfs"
 ACCOMPANYING_FINDER = "accompanying_vote_tab"
 ACCOMPANYING_SUMMARY_FINDER = "accompanying_summary_tab"
+COMMITTEE_DOCUMENTS_FINDER = "committee_documents_tab"
 FINDERS = (
     bill_tabs.FINDER_ID,
     REPORT_FINDER,
     ACCOMPANYING_FINDER,
     ACCOMPANYING_SUMMARY_FINDER,
     HEARING_FINDER,
+    COMMITTEE_DOCUMENTS_FINDER,
 )
 _DEADLINE_STUDY = re.compile(
     r"under\s+(?:House\s+Rule\s+27|Joint\s+Rule\s+10|JR\s?10)\b", re.I
@@ -296,6 +299,28 @@ def _votes(
     return found
 
 
+def _committee_tab(
+    docs: Sequence[CommitteeDocument], bill_id: str, kind: DocumentKind
+) -> list[_Found]:
+    found = []
+    for doc in docs:
+        if doc.document_kind != kind or bill_id not in doc.bill_ids:
+            continue
+        posted = f", posted {doc.posted_on.isoformat()}" if doc.posted_on else ""
+        found.append(
+            _Found(
+                DocumentCandidate(
+                    url=doc.url,
+                    finder_id=COMMITTEE_DOCUMENTS_FINDER,
+                    location=f"Committee Documents tab: {doc.title}{posted}",
+                    confidence=0.85 if doc.from_content else 0.95,
+                ),
+                created_at=doc.created_at,
+            )
+        )
+    return found
+
+
 def _document(kind: DocumentKind, found: list[_Found]) -> DocumentPayload:
     """Combine candidates; a creation date counts only if every candidate has one."""
     created = [f.created_at for f in found]
@@ -318,30 +343,36 @@ def observe(
     document_plan: DocumentPlan,
     fetched: Mapping[str, Fetched],
     hearing_documents: Sequence[HearingDocument] | None,
+    committee_documents: Sequence[CommitteeDocument] | None,
     session: int,
     bill_id: str,
     committee_id: str,
 ) -> list[Observation]:
     """A search per document kind for the committee, and a document when found.
 
-    hearing_documents is None when no hearing data existed for the committee at
-    the time; the hearing finder then has not run and the search is not exhaustive.
+    hearing_documents and committee_documents are None when the committee's
+    hearings or Documents tab had not been collected at the time; that finder
+    then has not run and the search is not exhaustive.
     """
     tabs = bill_tabs.tab_candidates(bill_body, bill_capture.url)
-    exhaustive = hearing_documents is not None and all(
-        url in fetched for url in document_plan.urls
+    exhaustive = (
+        hearing_documents is not None
+        and committee_documents is not None
+        and all(url in fetched for url in document_plan.urls)
     )
     consulted = (
         bill_capture.capture_id,
         *tuple(f.capture.capture_id for f in fetched.values()),
     )
+    hearing = hearing_documents or ()
+    committee = committee_documents or ()
     results = {
-        DocumentKind.SUMMARY: _summaries(
-            tabs, hearing_documents or (), bill_id, document_plan, fetched
-        ),
+        DocumentKind.SUMMARY: _summaries(tabs, hearing, bill_id, document_plan, fetched)
+        + _committee_tab(committee, bill_id, DocumentKind.SUMMARY),
         DocumentKind.VOTES: _votes(
-            document_plan, fetched, hearing_documents or (), bill_id, committee_id
-        ),
+            document_plan, fetched, hearing, bill_id, committee_id
+        )
+        + _committee_tab(committee, bill_id, DocumentKind.VOTES),
     }
     observations = []
     for kind, found in results.items():

@@ -16,6 +16,7 @@ class ObservationKind(StrEnum):
     DOCUMENT_SEARCH = "document_search"
     DOCUMENT = "document"
     HEARING = "hearing"
+    COMMITTEE_DOCUMENTS = "committee_documents"
 
 
 class DocumentKind(StrEnum):
@@ -200,12 +201,44 @@ class HearingPayload(BaseModel):
     consulted: tuple[UUID, ...] = ()
 
 
+class CommitteeDocument(BaseModel):
+    """A document listed on a committee's Documents tab.
+
+    document_kind is None for documents that are neither a summary nor a vote
+    record (hearing schedules, committee rules); such documents cover no bills.
+    from_content is set when the kind or bills were read from the document's text.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    url: str
+    title: str
+    posted_on: date | None
+    document_kind: DocumentKind | None
+    bill_ids: tuple[str, ...]
+    from_content: bool = False
+    created_at: AwareDatetime | None = None
+
+
+class CommitteeDocumentsPayload(BaseModel):
+    """A committee's Documents tab and what each listed document covers."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal[ObservationKind.COMMITTEE_DOCUMENTS] = (
+        ObservationKind.COMMITTEE_DOCUMENTS
+    )
+    documents: tuple[CommitteeDocument, ...]
+    consulted: tuple[UUID, ...] = ()
+
+
 Payload = Annotated[
     BillHistoryPayload
     | CommitteeBillListPayload
     | DocumentSearchPayload
     | DocumentPayload
-    | HearingPayload,
+    | HearingPayload
+    | CommitteeDocumentsPayload,
     Field(discriminator="kind"),
 ]
 

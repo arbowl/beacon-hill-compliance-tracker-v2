@@ -29,6 +29,7 @@ class EvidenceSource(StrEnum):
     SEARCH = "Document search"
     DOCUMENT = "Document"
     HEARING = "Hearing page"
+    COMMITTEE_DOCUMENTS = "Committee Documents tab"
     LISTING = "Committee bill list"
 
 
