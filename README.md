@@ -91,6 +91,27 @@ Other flags: `--quiet` (no console progress), `--json-events` (events to stdout)
 
 Only one run can use a data directory at a time; a second exits with an error.
 
+### Control center
+
+`beacon serve` also has a schedule and a way to send results to the site, both saved
+to `data/control.json`.
+
+- **Schedule**: a plan, committees, a time, and weekdays, in State House (Eastern)
+  time. It runs only while `serve` is running. A time missed while it was closed is
+  skipped; one missed while the machine slept runs once on waking. If another run
+  holds the data directory, that check is skipped and the reason is shown. To run
+  without the control center, schedule `uv run beacon run mvp` with the operating
+  system's scheduler instead.
+- **Send to the website**: a site address and ingest key. Saved values take
+  precedence over `[site] url` and `BEACON_SITE_KEY`. **Send now** pushes the newest
+  bundle of every committee. **Send results after every check** pushes what each run
+  wrote, including scheduled runs. Runs with an as-of date are never sent. The key is
+  stored in plain text in `control.json` and is never shown in the page. Changing the
+  address clears the saved key. Plain `http` is accepted only for this machine.
+
+The control center answers only requests addressed to `127.0.0.1` or `localhost`
+(or the `--host` given), and refuses changes sent from other web pages.
+
 ## Output
 
 ```
