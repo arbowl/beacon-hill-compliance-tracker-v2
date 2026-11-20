@@ -53,6 +53,7 @@ class ReportInput:
     bills: Sequence[BillRecord]
     committee_output: Sequence[CommitteeOutput] = ()
     evidence: Mapping[EvidenceRef, EvidenceItem] = field(default_factory=dict)
+    committee_url: str | None = None
 
 
 class Reporter(Protocol):

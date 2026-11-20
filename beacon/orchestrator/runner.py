@@ -3,12 +3,15 @@
 import logging
 from collections.abc import Sequence
 from datetime import date, datetime, time
+from importlib.metadata import version
 from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
+from beacon_contract import v1
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from beacon.adapters import changelog, site_push
 from beacon.adapters.blobs import FileBlobStore
 from beacon.adapters.clock import SystemClock
 from beacon.adapters.events import (
@@ -31,6 +34,7 @@ from beacon.ports.store import RunStatus, Stage
 from beacon.reporters.audit_html import AuditReporter
 from beacon.reporters.base import Reporter
 from beacon.reporters.json_export import JsonReporter
+from beacon.reporters.site_bundle import SiteBundleReporter
 from beacon.reporters.v1_parity import V1ParityReporter
 
 PLANS: dict[str, tuple[Stage, ...]] = {
@@ -115,7 +119,11 @@ def build_context(settings: Settings, extra_sinks: Sequence[EventSink] = ()) -> 
 
 
 def _reporters(ctx: Context, v1: Path | None) -> list[Reporter]:
-    reporters: list[Reporter] = [JsonReporter(), AuditReporter(ctx.clauses)]
+    reporters: list[Reporter] = [
+        JsonReporter(),
+        AuditReporter(ctx.clauses),
+        SiteBundleReporter(ctx.clauses),
+    ]
     if v1 is not None:
         reporters.append(V1ParityReporter(v1))
     return reporters
@@ -197,6 +205,38 @@ def _committee(ctx: Context, request: RunRequest, committee_id: str) -> list[Pat
                 stages.report(ctx, committee_id, _reporters(ctx, request.v1))
             )
     return written
+
+
+SITE_KEY_ENV = "BEACON_SITE_KEY"
+
+
+def push(
+    settings: Settings, key: str, committees: Sequence[str] | None = None
+) -> v1.RunState:
+    """Push the newest bundle of each committee (all with bundles if none named)."""
+    if settings.site.url is None:
+        raise site_push.PushError("Set [site] url in the config to push")
+    paths = site_push.latest_bundles(settings.report_dir, committees)
+    bundles = [site_push.load_bundle(p) for p in paths.values()]
+    if not bundles:
+        raise site_push.PushError("No bundles to push; run report first")
+    manifest = site_push.manifest(bundles, version("beacon"), SystemClock().now())
+    with site_push.site_client(settings.site.url, key) as client:
+        return site_push.SitePusher(client).push(
+            manifest, {c: p.read_bytes() for c, p in paths.items()}
+        )
+
+
+def push_changelog(settings: Settings, key: str) -> v1.ChangelogState:
+    """Send CHANGELOG.md's releases; the newest must be this client's version."""
+    if settings.site.url is None:
+        raise site_push.PushError("Set [site] url in the config to push")
+    try:
+        body = changelog.load(settings.site.changelog, version("beacon"))
+    except changelog.ChangelogError as exc:
+        raise site_push.PushError(f"{settings.site.changelog}: {exc}") from exc
+    with site_push.site_client(settings.site.url, key) as client:
+        return site_push.SitePusher(client).push_changelog(body)
 
 
 def run(

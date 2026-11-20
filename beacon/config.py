@@ -26,6 +26,15 @@ class ScheduleSettings(BaseModel):
     sweep_days: int = 7
 
 
+class SiteSettings(BaseModel):
+    """Where `beacon push` sends bundles and the changelog; key from BEACON_SITE_KEY."""
+
+    model_config = ConfigDict(frozen=True)
+
+    url: str | None = None
+    changelog: Path = Path("CHANGELOG.md")
+
+
 class Settings(BaseModel):
     """Top-level configuration."""
 
@@ -39,6 +48,7 @@ class Settings(BaseModel):
     rules_dir: Path = Path("rules")
     fetch: FetchSettings = FetchSettings()
     schedule: ScheduleSettings = ScheduleSettings()
+    site: SiteSettings = SiteSettings()
 
     @property
     def db_path(self) -> Path:

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Massachusetts Legislature committee compliance tracker"
 requires-python = ">=3.12"
 dependencies = [
+    "beacon-contract",
     "beautifulsoup4>=4.15.0",
     "httpx>=0.28.1",
     "pydantic>=2.9",
@@ -15,6 +16,9 @@ dependencies = [
 
 [project.scripts]
 beacon = "beacon.orchestrator.cli:main"
+
+[tool.uv.sources]
+beacon-contract = { path = "../beacon-hill-tracker-v2/contract", editable = true }
 
 [dependency-groups]
 dev = [

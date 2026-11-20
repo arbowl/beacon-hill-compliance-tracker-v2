@@ -4,6 +4,8 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from beacon.domain.captures import Capture
 from beacon.domain.observations import (
     DocumentKind,
@@ -11,7 +13,12 @@ from beacon.domain.observations import (
     DocumentSearchPayload,
     HearingDocument,
 )
-from beacon.scraper.documents.observe import Fetched, observe, plan
+from beacon.scraper.documents.observe import (
+    Fetched,
+    hearing_document_kind,
+    observe,
+    plan,
+)
 from beacon.scraper.history.extractor import parse_history
 
 PAGES = Path(__file__).resolve().parents[1] / "fixtures" / "pages"
@@ -97,6 +104,41 @@ def test_hearing_document_summary_with_creation_date():
         "Hearing document: H67 Bill Summary"
     )
     assert summary["document"].created_at == datetime(2025, 4, 1, 9, tzinfo=UTC)
+
+
+def test_hearing_vote_document_is_vote_evidence_not_summary():
+    doc = HearingDocument(
+        url=f"{BASE}/Events/DownloadDocument?attachmentId=3",
+        title="H67 - Votes of House Committee Members",
+        bill_ids=("H67",),
+        created_at=datetime(2025, 5, 2, 14, tzinfo=UTC),
+    )
+    by_kind = run("H67", {}, [doc])["by_kind"]
+    assert by_kind[DocumentKind.SUMMARY]["document_search"].candidates == ()
+    votes = by_kind[DocumentKind.VOTES]
+    candidate = votes["document_search"].candidates[0]
+    assert candidate.finder_id == "hearing_documents"
+    assert candidate.location == f"Hearing document: {doc.title}"
+    assert votes["document"].created_at == datetime(2025, 5, 2, 14, tzinfo=UTC)
+    assert votes["document"].vote_date is None
+
+
+@pytest.mark.parametrize(
+    ("title", "from_content", "kind"),
+    [
+        ("H67 Bill Summary", False, DocumentKind.SUMMARY),
+        ("H67", False, DocumentKind.SUMMARY),
+        ("H.67_Summary_Relative to vote by mail", False, DocumentKind.SUMMARY),
+        ("H67 - House Committee Members Votes", False, DocumentKind.VOTES),
+        ("Roll Call H67", False, DocumentKind.VOTES),
+        ("Hearing 4 Vote Packet", True, DocumentKind.SUMMARY),
+    ],
+)
+def test_hearing_document_kind(title, from_content, kind):
+    doc = HearingDocument(
+        url=f"{BASE}/x", title=title, bill_ids=("H67",), from_content=from_content
+    )
+    assert hearing_document_kind(doc) == kind
 
 
 def test_creation_date_dropped_when_another_source_lacks_one():

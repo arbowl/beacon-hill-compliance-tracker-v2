@@ -65,6 +65,10 @@ max_workers = 4
 
 [schedule]
 sweep_days = 7             # re-search documents for unchanged bills this often
+
+[site]
+url = "http://127.0.0.1:5000"         # where `push` sends; key in BEACON_SITE_KEY
+changelog = "CHANGELOG.md"             # sent before every push
 ```
 
 ## Running
@@ -97,6 +101,35 @@ data/
   events/                        <run_id>.jsonl, plan-<id>.jsonl (live progress)
   logs/beacon.log
 ```
+
+## Versioning and the changelog
+
+[CHANGELOG.md](CHANGELOG.md) follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and the version follows [SemVer](https://semver.org/spec/v2.0.0.html). The site shows the
+changelog to the public at `/changes`, so write entries in plain language, in the Tracker's
+voice (detections, not judgments), and keep developer detail in commit messages.
+
+| Bump | When |
+|---|---|
+| Major | A breaking change to the push contract (a new `beacon_contract` schema version) |
+| Minor | Anything that can change a finding: a ruleset `version` bump, an `EXTRACTOR_VERSION` or `FINDER_VERSION` bump, a committee name change, new rule text |
+| Patch | A fix that changes no finding (logging, speed, the GUI, the local HTML report) |
+
+A minor or major release also puts a short notice on the site's dashboard for 14 days.
+
+To release:
+
+1. Note each change under `## [Unreleased]` as you make it.
+2. Rename that heading to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh `## [Unreleased]` above
+   it, and update the links at the bottom.
+3. Set `version` in `pyproject.toml` to the same `X.Y.Z`, run `uv sync`, and tag `vX.Y.Z`.
+
+`beacon push` (and `run mvp`) sends every released version before the bundles. It
+refuses to push if the newest release does not match the installed version, if the file
+strays from the format (headings `## [X.Y.Z] - YYYY-MM-DD` and `### Added`, `Changed`,
+`Deprecated`, `Removed`, `Fixed`, or `Security`, then `- ` items), or if a release the site
+already shows is missing. The test suite checks the first two. A release's text can
+be corrected later, and the site keeps the earlier text.
 
 ## Making changes
 

@@ -3,7 +3,8 @@
 Finders, in order: the bill page's tabs; report vote PDFs linked from the bill page;
 the Committee Vote tab of a new draft or study order the bill accompanied (except
 deadline study orders, which the chair reports without a vote); and documents
-attached to the committee's hearings. A search is exhaustive when every finder ran
+attached to the committee's hearings, sorted into summaries and vote records by
+title. A search is exhaustive when every finder ran
 and none of its fetches failed.
 """
 
@@ -43,6 +44,28 @@ FINDERS = (
 _DEADLINE_STUDY = re.compile(
     r"under\s+(?:House\s+Rule\s+27|Joint\s+Rule\s+10|JR\s?10)\b", re.I
 )
+_SUMMARY_WORDING = re.compile(r"summar", re.I)
+
+
+def hearing_document_kind(doc: HearingDocument) -> DocumentKind:
+    """What a hearing document is, from its title.
+
+    Summary wording wins because summary titles often quote the bill's own title.
+    Titles naming only a bill number are summaries.
+    """
+    if doc.from_content or _SUMMARY_WORDING.search(doc.title):
+        return DocumentKind.SUMMARY
+    if bill_tabs.VOTE_WORDING.search(doc.title):
+        return DocumentKind.VOTES
+    return DocumentKind.SUMMARY
+
+
+def _hearing_documents(
+    docs: Sequence[HearingDocument], bill_id: str, kind: DocumentKind
+) -> list[HearingDocument]:
+    return [
+        d for d in docs if bill_id in d.bill_ids and hearing_document_kind(d) == kind
+    ]
 
 
 @dataclass(frozen=True)
@@ -201,24 +224,27 @@ def _summaries(
                     )
                 )
             )
-    for doc in hearing_documents:
-        if bill_id in doc.bill_ids:
-            found.append(
-                _Found(
-                    DocumentCandidate(
-                        url=doc.url,
-                        finder_id=HEARING_FINDER,
-                        location=f"Hearing document: {doc.title}",
-                        confidence=0.85 if doc.from_content else 0.95,
-                    ),
-                    created_at=doc.created_at,
-                )
+    for doc in _hearing_documents(hearing_documents, bill_id, DocumentKind.SUMMARY):
+        found.append(
+            _Found(
+                DocumentCandidate(
+                    url=doc.url,
+                    finder_id=HEARING_FINDER,
+                    location=f"Hearing document: {doc.title}",
+                    confidence=0.85 if doc.from_content else 0.95,
+                ),
+                created_at=doc.created_at,
             )
+        )
     return found
 
 
 def _votes(
-    document_plan: DocumentPlan, fetched: Mapping[str, Fetched], committee_id: str
+    document_plan: DocumentPlan,
+    fetched: Mapping[str, Fetched],
+    hearing_documents: Sequence[HearingDocument],
+    bill_id: str,
+    committee_id: str,
 ) -> list[_Found]:
     found = []
     if document_plan.vote_tab:
@@ -255,6 +281,18 @@ def _votes(
                     created_at=content.created_at,
                 )
             )
+    for doc in _hearing_documents(hearing_documents, bill_id, DocumentKind.VOTES):
+        found.append(
+            _Found(
+                DocumentCandidate(
+                    url=doc.url,
+                    finder_id=HEARING_FINDER,
+                    location=f"Hearing document: {doc.title}",
+                    confidence=0.9,
+                ),
+                created_at=doc.created_at,
+            )
+        )
     return found
 
 
@@ -301,7 +339,9 @@ def observe(
         DocumentKind.SUMMARY: _summaries(
             tabs, hearing_documents or (), bill_id, document_plan, fetched
         ),
-        DocumentKind.VOTES: _votes(document_plan, fetched, committee_id),
+        DocumentKind.VOTES: _votes(
+            document_plan, fetched, hearing_documents or (), bill_id, committee_id
+        ),
     }
     observations = []
     for kind, found in results.items():

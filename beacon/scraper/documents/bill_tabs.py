@@ -11,7 +11,7 @@ from beacon.domain.observations import DocumentCandidate, DocumentKind, VoteReco
 from beacon.scraper.history.committees import normalize_committee_name
 
 FINDER_ID = "bill_tabs"
-FINDER_VERSION = 6
+FINDER_VERSION = 7
 _TABS = {
     "CommitteeSummary": (DocumentKind.SUMMARY, "Committee Summary tab"),
     "PrimarySponsorSummary": (DocumentKind.SUMMARY, "Primary Sponsor Summary tab"),
@@ -107,7 +107,7 @@ def parse_vote_tab(body: bytes) -> list[CommitteeVote]:
     return votes
 
 
-_VOTE_LINK = re.compile(r"\bvotes?\b|roll[- ]?call", re.I)
+VOTE_WORDING = re.compile(r"\bvotes?\b|roll[- ]?call", re.I)
 _REPORT_HREF = re.compile(r"/Reports/\d+/", re.I)
 
 
@@ -120,7 +120,7 @@ def report_vote_links(body: bytes, base_url: str) -> list[tuple[str, str]]:
         if not isinstance(href, str) or not _REPORT_HREF.search(href):
             continue
         text = " ".join(link.get_text(" ", strip=True).split())
-        if _VOTE_LINK.search(text) or _VOTE_LINK.search(href):
+        if VOTE_WORDING.search(text) or VOTE_WORDING.search(href):
             links.append((urljoin(base_url, href), text))
     return list(dict.fromkeys(links))
 

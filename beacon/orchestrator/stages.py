@@ -893,6 +893,7 @@ def report(ctx: Context, committee_id: str, reporters: list[Reporter]) -> list[P
         bills=bills,
         committee_output=_committee_output(ctx, bills, evaluations),
         evidence=_evidence(ctx, evaluations),
+        committee_url=committee.url if committee else None,
     )
     written: list[Path] = []
 
