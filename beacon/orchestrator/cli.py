@@ -11,14 +11,15 @@ import uvicorn
 
 from beacon.adapters.events import ConsoleSink, JsonLinesSink
 from beacon.adapters.run_lock import RunLockedError
-from beacon.adapters.site_push import PushError
+from beacon.adapters.site_push import PushError, bundle_committees, site_client
 from beacon.config import Settings, load_settings
-from beacon.gui.app import create_app
+from beacon.gui.app import LOCAL_HOSTS, create_app
 from beacon.orchestrator import runner, stages
 from beacon.orchestrator.runner import PLANS, RunRequest
 from beacon.ports.events import EventSink
 from beacon.ports.store import Stage
-from beacon.reporters.site_bundle import BUNDLE_SUFFIX
+
+_ANY_HOST = frozenset({"0.0.0.0", "::"})
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -52,24 +53,28 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _serve(config: Path, host: str, port: int) -> int:
-    uvicorn.run(create_app(config), host=host, port=port, log_level="warning")
+    allowed = ("*",) if host in _ANY_HOST else (*LOCAL_HOSTS, host)
+    app = create_app(config, allowed_hosts=allowed)
+    uvicorn.run(app, host=host, port=port, log_level="warning")
     return 0
 
 
 def _push(settings: Settings, committees: Sequence[str] | None) -> int:
     key = os.environ.get(runner.SITE_KEY_ENV)
+    if settings.site.url is None:
+        print("error: set [site] url in the config to push", file=sys.stderr)
+        return 1
     if not key:
         print(f"error: set {runner.SITE_KEY_ENV} to push", file=sys.stderr)
         return 1
     try:
-        notes = runner.push_changelog(settings, key)
-        print(
-            f"  changelog: {', '.join(notes.updated) or 'unchanged'}", file=sys.stderr
-        )
-        state = runner.push(settings, key, committees)
+        with site_client(settings.site.url, key) as client:
+            outcome = runner.push(settings, client, committees)
     except PushError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
+    notes, state = outcome.changelog, outcome.run
+    print(f"  changelog: {', '.join(notes.updated) or 'unchanged'}", file=sys.stderr)
     print(
         f"  push {state.push_id} {state.status}: {', '.join(state.committees)}",
         file=sys.stderr,
@@ -109,11 +114,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except stages.StageError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
-    pushed = [
-        p.name.removesuffix(BUNDLE_SUFFIX)
-        for p in written
-        if p.name.endswith(BUNDLE_SUFFIX)
-    ]
+    pushed = bundle_committees(written)
     if args.command == "run" and pushed and not args.no_push and settings.site.url:
         return _push(settings, pushed)
     return 0

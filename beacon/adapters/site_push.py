@@ -1,7 +1,7 @@
 """Uploads committee bundles to the Tracker site's ingest API."""
 
 import gzip
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid5
@@ -36,6 +36,15 @@ def latest_bundles(
     if missing:
         raise PushError(f"No bundle for {', '.join(missing)}; run report first")
     return {c: found[c] for c in committees}
+
+
+def bundle_committees(paths: Iterable[Path]) -> list[str]:
+    """Committee ids of the bundle files among paths."""
+    return [
+        p.name.removesuffix(BUNDLE_SUFFIX)
+        for p in paths
+        if p.name.endswith(BUNDLE_SUFFIX)
+    ]
 
 
 def load_bundle(path: Path) -> v1.CommitteeBundle:
@@ -132,11 +141,16 @@ class SitePusher:
         return _state(self._client.post(f"{base}/publish"))
 
 
-def site_client(url: str, key: str, timeout: float = 120.0) -> httpx.Client:
+def site_client(
+    url: str,
+    key: str,
+    timeout: float = 120.0,
+    transport: httpx.BaseTransport | None = None,
+) -> httpx.Client:
     """An HTTP client for the site with the ingest key attached."""
     return httpx.Client(
         base_url=url.rstrip("/"),
         headers={"Authorization": f"Bearer {key}"},
         timeout=timeout,
-        transport=httpx.HTTPTransport(retries=3),
+        transport=transport or httpx.HTTPTransport(retries=3),
     )

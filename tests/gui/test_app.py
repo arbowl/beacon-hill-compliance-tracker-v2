@@ -5,14 +5,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-import pytest
+from beacon_contract import v1
+from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from beacon.adapters.blobs import FileBlobStore
-from beacon.adapters.clock import FixedClock
-from beacon.adapters.fetchers import FixtureFetcher
 from beacon.adapters.run_lock import RunLock
-from beacon.adapters.sqlite_store import SqliteStore
+from beacon.adapters.site_push import PushError
 from beacon.config import Settings
 from beacon.domain.events import (
     CommitteeStarted,
@@ -21,40 +19,16 @@ from beacon.domain.events import (
     RunFinished,
     RunStarted,
 )
-from beacon.evaluator.clauses import ClauseIndex
 from beacon.gui.app import build_app
 from beacon.gui.jobs import JobProgress
-from beacon.orchestrator import runner
-from beacon.orchestrator.runner import RunRequest
-from beacon.orchestrator.stages import Context
+from beacon.orchestrator.runner import PushOutcome, RunRequest
 from beacon.ports.events import EventSink
-from tests.orchestrator.test_pipeline import AS_OF, BASE, fixture_pages
 
-RULES = Path(__file__).resolve().parents[2] / "rules"
-
-
-@pytest.fixture
-def settings(tmp_path: Path) -> Settings:
-    return Settings(
-        data_dir=tmp_path, base_url=BASE, committees=("J19",), rules_dir=RULES
-    )
+LOCAL = "http://127.0.0.1:8765"
 
 
-@pytest.fixture
-def populated(settings: Settings) -> Settings:
-    clock = FixedClock(AS_OF)
-    store = SqliteStore(settings.db_path)
-    ctx = Context(
-        settings=settings,
-        store=store,
-        blobs=FileBlobStore(settings.blob_dir),
-        fetcher=FixtureFetcher(clock, fixture_pages()),
-        clock=clock,
-        clauses=ClauseIndex.load(RULES),
-    )
-    runner.execute(ctx, RunRequest(plan="mvp"))
-    store.close()
-    return settings
+def _client(app: Starlette) -> TestClient:
+    return TestClient(app, base_url=LOCAL)
 
 
 class FakeRunner:
@@ -83,7 +57,7 @@ class FakeRunner:
 
 
 def test_options_list_plans_stages_and_flags(settings: Settings):
-    client = TestClient(build_app(settings, FakeRunner()))
+    client = _client(build_app(settings, FakeRunner()))
     options = client.get("/api/options").json()
     assert options["plans"]["mvp"][0] == "collect"
     assert "evaluate" in options["stages"]
@@ -95,7 +69,7 @@ def test_options_list_plans_stages_and_flags(settings: Settings):
 def test_start_run_uses_shared_request(settings: Settings):
     fake = FakeRunner()
     app = build_app(settings, fake)
-    client = TestClient(app)
+    client = _client(app)
     response = client.post(
         "/api/runs",
         json={
@@ -115,20 +89,20 @@ def test_start_run_uses_shared_request(settings: Settings):
 
 
 def test_invalid_request_is_rejected(settings: Settings):
-    client = TestClient(build_app(settings, FakeRunner()))
+    client = _client(build_app(settings, FakeRunner()))
     response = client.post("/api/runs", json={"plan": "mvp", "stage": "scrape"})
     assert response.status_code == 422
 
 
 def test_busy_lock_is_reported(settings: Settings):
-    client = TestClient(build_app(settings, FakeRunner()))
+    client = _client(build_app(settings, FakeRunner()))
     with RunLock(settings.data_dir):
         response = client.post("/api/runs", json={"stage": "evaluate"})
     assert response.status_code == 409
 
 
 def test_results_and_bill_detail(populated: Settings):
-    client = TestClient(build_app(populated, FakeRunner()))
+    client = _client(build_app(populated, FakeRunner()))
     results = client.get("/api/committees/J19/results").json()
     assert results["summary"] == {"Non-Compliant": 5, "Compliant": 1}
     assert results["requirement_totals"]["report_out_deadline"]["Met"] >= 1
@@ -148,7 +122,7 @@ def test_results_and_bill_detail(populated: Settings):
 
 
 def test_options_list_every_current_committee(populated: Settings):
-    client = TestClient(build_app(populated, FakeRunner()))
+    client = _client(build_app(populated, FakeRunner()))
     committees = client.get("/api/options").json()["committees"]
     assert len(committees) == 54
     j19 = next(c for c in committees if c["id"] == "J19")
@@ -159,7 +133,7 @@ def test_options_list_every_current_committee(populated: Settings):
 
 
 def test_overview_cards(populated: Settings):
-    client = TestClient(build_app(populated, FakeRunner()))
+    client = _client(build_app(populated, FakeRunner()))
     (card,) = client.get("/api/overview").json()
     assert card["committee_id"] == "J19" and card["bills"] == 6
     assert card["audit_url"] and card["audit_url"].endswith("/J19_audit.html")
@@ -168,7 +142,7 @@ def test_overview_cards(populated: Settings):
 
 
 def test_runs_listed(populated: Settings):
-    client = TestClient(build_app(populated, FakeRunner()))
+    client = _client(build_app(populated, FakeRunner()))
     runs = client.get("/api/runs").json()
     assert any(r["scope"] == "J19" for r in runs)
     assert {r["stage"] for r in runs} >= {"collect", "scrape", "evaluate", "report"}
@@ -210,9 +184,7 @@ def test_job_state_tracks_committee_position(settings: Settings):
         return []
 
     app = build_app(settings, runner_with_plan)
-    TestClient(app).post(
-        "/api/runs", json={"plan": "mvp", "committees": ["J19", "J45"]}
-    )
+    _client(app).post("/api/runs", json={"plan": "mvp", "committees": ["J19", "J45"]})
     app.state.jobs.wait(5)
     (progress,) = seen
     assert progress is not None
@@ -222,3 +194,137 @@ def test_job_state_tracks_committee_position(settings: Settings):
         "J45",
     )
     assert (progress.stage, progress.done, progress.stage_total) == ("scrape", 40, 91)
+
+
+class FakePusher:
+    def __init__(self, error: Exception | None = None) -> None:
+        self.calls: list[Sequence[str] | None] = []
+        self.error = error
+
+    def __call__(self, committees: Sequence[str] | None) -> PushOutcome:
+        self.calls.append(committees)
+        if self.error is not None:
+            raise self.error
+        at = datetime(2026, 11, 19, tzinfo=UTC)
+        return PushOutcome(
+            changelog=v1.ChangelogState(releases=("0.1.0",), updated=()),
+            run=v1.RunState(
+                push_id=uuid4(),
+                status=v1.RunStatus.PUBLISHED,
+                committees=tuple(committees or ("J19",)),
+                uploaded=tuple(committees or ("J19",)),
+                opened_at=at,
+                published_at=at,
+            ),
+        )
+
+
+def _bundle_runner(
+    settings: Settings, request: RunRequest, sinks: Sequence[EventSink]
+) -> list[Path]:
+    return [settings.data_dir / "2026-11-19" / "J19.bundle.json.gz"]
+
+
+def _app(settings: Settings, pusher: FakePusher, run=_bundle_runner) -> Starlette:
+    return build_app(settings, run, pusher, environ={})
+
+
+def test_target_saved_without_ever_returning_the_key(settings: Settings):
+    client = _client(_app(settings, FakePusher()))
+    control = client.get("/api/control").json()
+    assert control["target"]["url"] is None and control["target"]["key_source"] is None
+    saved = client.put(
+        "/api/target",
+        json={"url": "https://tracker.example.org", "key": "sekrit", "auto": True},
+    )
+    assert saved.status_code == 200
+    target = saved.json()["target"]
+    assert target["url"] == "https://tracker.example.org"
+    assert (target["url_source"], target["key_source"], target["auto"]) == (
+        "saved",
+        "saved",
+        True,
+    )
+    assert "sekrit" not in saved.text
+    assert "sekrit" not in client.get("/api/control").text
+    bad = client.put("/api/target", json={"url": "http://tracker.example.org"})
+    assert bad.status_code == 422 and "https" in bad.json()["error"]
+
+
+def test_schedule_saved_and_next_run_reported(settings: Settings):
+    client = _client(_app(settings, FakePusher()))
+    response = client.put(
+        "/api/schedule",
+        json={"enabled": True, "at": "01:00", "days": [0, 2, 4], "plan": "mvp"},
+    )
+    assert response.status_code == 200
+    control = response.json()
+    assert control["schedule"]["days"] == [0, 2, 4] and control["next_run"]
+    assert client.app.state.scheduler.next_due is not None
+    empty = client.put("/api/schedule", json={"enabled": True, "days": []})
+    assert (
+        empty.status_code == 422 and empty.json()["error"] == "Choose at least one day"
+    )
+
+
+def test_cross_origin_and_foreign_host_refused(settings: Settings):
+    client = _client(_app(settings, FakePusher()))
+    evil = {"Origin": "https://evil.example"}
+    for method, path in [
+        ("PUT", "/api/target"),
+        ("PUT", "/api/schedule"),
+        ("POST", "/api/push"),
+        ("POST", "/api/runs"),
+    ]:
+        assert client.request(method, path, json={}, headers=evil).status_code == 403
+    same = client.put("/api/target", json={}, headers={"Origin": LOCAL})
+    assert same.status_code == 200
+    rebound = TestClient(client.app, base_url="http://evil.example:8765")
+    assert rebound.get("/api/control").status_code == 400
+
+
+def test_send_now_pushes_every_committee(settings: Settings):
+    pusher = FakePusher()
+    app = _app(settings, pusher)
+    response = _client(app).post("/api/push")
+    assert response.status_code == 202
+    app.state.jobs.wait(5)
+    job = _client(app).get("/api/job").json()
+    assert (
+        job["status"] == "succeeded" and job["pushed"]["run"]["status"] == "published"
+    )
+    assert pusher.calls == [None]
+
+
+def test_auto_push_sends_what_the_run_wrote(settings: Settings):
+    pusher = FakePusher()
+    app = _app(settings, pusher)
+    client = _client(app)
+    client.put("/api/target", json={"url": "https://a.example", "auto": True})
+    client.post("/api/runs", json={"plan": "offline"})
+    app.state.jobs.wait(5)
+    assert pusher.calls == [["J19"]]
+    client.post("/api/runs", json={"plan": "offline", "as_of": "2026-03-18"})
+    app.state.jobs.wait(5)
+    assert pusher.calls == [["J19"]]
+    assert client.get("/api/job").json()["pushed"] is None
+
+
+def test_auto_push_skipped_when_run_writes_no_bundles(settings: Settings):
+    pusher = FakePusher()
+    app = _app(settings, pusher, run=FakeRunner())
+    client = _client(app)
+    client.put("/api/target", json={"url": "https://a.example", "auto": True})
+    client.post("/api/runs", json={"plan": "offline"})
+    app.state.jobs.wait(5)
+    assert pusher.calls == [] and client.get("/api/job").json()["status"] == "succeeded"
+
+
+def test_push_failure_is_reported_as_the_push_phase(settings: Settings):
+    pusher = FakePusher(PushError("HTTP 401 unauthorized: bad key"))
+    app = _app(settings, pusher)
+    _client(app).post("/api/push")
+    app.state.jobs.wait(5)
+    job = _client(app).get("/api/job").json()
+    assert (job["status"], job["phase"]) == ("failed", "push")
+    assert job["error"] == "HTTP 401 unauthorized: bad key"

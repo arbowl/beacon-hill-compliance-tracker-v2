@@ -1,6 +1,8 @@
 """Read-only views over the store, shaped for the browser."""
 
 from collections import Counter
+from collections.abc import Mapping
+from datetime import datetime
 from typing import Any
 
 from beacon.adapters.sqlite_store import SqliteStore
@@ -11,7 +13,9 @@ from beacon.domain.observations import ObservationKind
 from beacon.domain.provenance import ClauseRef
 from beacon.evaluator.clauses import ClauseIndex
 from beacon.evaluator.facts import project
-from beacon.orchestrator.runner import ALL_COMMITTEES, PLANS
+from beacon.gui.control import ControlPreferences, resolve
+from beacon.gui.scheduler import ScheduledAttempt
+from beacon.orchestrator.runner import ALL_COMMITTEES, PLANS, SITE_KEY_ENV
 from beacon.ports.store import Stage
 from beacon.scraper.history.committees import COMMITTEE_REGISTRY
 
@@ -49,6 +53,32 @@ def options(settings: Settings, store: SqliteStore) -> dict[str, Any]:
             "full": (
                 "Look again for every summary and vote, not only for bills that changed"
             ),
+        },
+    }
+
+
+def control(
+    preferences: ControlPreferences,
+    settings: Settings,
+    environ: Mapping[str, str],
+    next_due: datetime | None,
+    last: ScheduledAttempt | None,
+) -> dict[str, Any]:
+    """The schedule and push target as the browser shows them; never the key."""
+    target = preferences.target
+    resolved = resolve(target, settings, environ)
+    return {
+        "schedule": preferences.schedule.model_dump(mode="json"),
+        "next_run": next_due.isoformat() if next_due else None,
+        "last_scheduled": last.model_dump(mode="json") if last else None,
+        "target": {
+            "url": resolved.url,
+            "url_source": resolved.url_source,
+            "saved_url": target.url,
+            "config_url": settings.site.url,
+            "key_source": resolved.key_source,
+            "key_env": SITE_KEY_ENV,
+            "auto": target.auto,
         },
     }
 

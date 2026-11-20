@@ -3,8 +3,27 @@
 import hashlib
 import tomllib
 from pathlib import Path
+from typing import Annotated
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict
+
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def _check_site_url(url: str) -> str:
+    """The site's base URL; plain http only to this machine, so keys are not exposed."""
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError("Site URL must look like https://host[:port]")
+    if parts.query or parts.fragment:
+        raise ValueError("Site URL must not have a query or fragment")
+    if parts.scheme == "http" and parts.hostname not in _LOOPBACK_HOSTS:
+        raise ValueError("Site URL must use https unless it is on this machine")
+    return url.rstrip("/")
+
+
+SiteUrl = Annotated[str, AfterValidator(_check_site_url)]
 
 
 class FetchSettings(BaseModel):
@@ -31,7 +50,7 @@ class SiteSettings(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    url: str | None = None
+    url: SiteUrl | None = None
     changelog: Path = Path("CHANGELOG.md")
 
 

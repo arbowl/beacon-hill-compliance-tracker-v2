@@ -8,6 +8,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
+import httpx
 from beacon_contract import v1
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -210,33 +211,37 @@ def _committee(ctx: Context, request: RunRequest, committee_id: str) -> list[Pat
 SITE_KEY_ENV = "BEACON_SITE_KEY"
 
 
+class PushOutcome(BaseModel):
+    """The site's replies to one push: the changelog, then the bundles."""
+
+    model_config = ConfigDict(frozen=True)
+
+    changelog: v1.ChangelogState
+    run: v1.RunState
+
+
 def push(
-    settings: Settings, key: str, committees: Sequence[str] | None = None
-) -> v1.RunState:
-    """Push the newest bundle of each committee (all with bundles if none named)."""
-    if settings.site.url is None:
-        raise site_push.PushError("Set [site] url in the config to push")
+    settings: Settings,
+    client: httpx.Client,
+    committees: Sequence[str] | None = None,
+) -> PushOutcome:
+    """Send the changelog, then the newest bundle of each committee.
+
+    Every committee with a bundle is sent if none are named.
+    """
+    try:
+        notes = changelog.load(settings.site.changelog, version("beacon"))
+    except changelog.ChangelogError as exc:
+        raise site_push.PushError(f"{settings.site.changelog}: {exc}") from exc
     paths = site_push.latest_bundles(settings.report_dir, committees)
     bundles = [site_push.load_bundle(p) for p in paths.values()]
     if not bundles:
         raise site_push.PushError("No bundles to push; run report first")
     manifest = site_push.manifest(bundles, version("beacon"), SystemClock().now())
-    with site_push.site_client(settings.site.url, key) as client:
-        return site_push.SitePusher(client).push(
-            manifest, {c: p.read_bytes() for c, p in paths.items()}
-        )
-
-
-def push_changelog(settings: Settings, key: str) -> v1.ChangelogState:
-    """Send CHANGELOG.md's releases; the newest must be this client's version."""
-    if settings.site.url is None:
-        raise site_push.PushError("Set [site] url in the config to push")
-    try:
-        body = changelog.load(settings.site.changelog, version("beacon"))
-    except changelog.ChangelogError as exc:
-        raise site_push.PushError(f"{settings.site.changelog}: {exc}") from exc
-    with site_push.site_client(settings.site.url, key) as client:
-        return site_push.SitePusher(client).push_changelog(body)
+    pusher = site_push.SitePusher(client)
+    notes_state = pusher.push_changelog(notes)
+    run_state = pusher.push(manifest, {c: p.read_bytes() for c, p in paths.items()})
+    return PushOutcome(changelog=notes_state, run=run_state)
 
 
 def run(

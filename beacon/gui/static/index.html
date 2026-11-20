@@ -89,6 +89,18 @@
   .story .item { padding: 12px 0; border-bottom: 1px solid var(--line); }
   blockquote { margin: 8px 0 0; padding: 2px 0 2px 12px; border-left: 3px solid var(--line); font: 15px/1.5 var(--serif); color: var(--soft); }
   details summary { cursor: pointer; color: var(--link); font-size: 14px; }
+  .grid2.tight { margin-bottom: 0; }
+  .go button.secondary { background: transparent; color: var(--ink); border: 2px solid var(--ink); padding: 10px 20px; }
+  .toggle { display: flex; gap: 10px; align-items: center; font-weight: 600; margin-bottom: 6px; }
+  fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; }
+  fieldset.plain:disabled { opacity: .5; }
+  .sentence.small { font-size: 19px; line-height: 2.1; }
+  .sentence.small select, .sentence.small input[type=time] { font: 700 17px var(--serif); color: var(--ink); background: var(--panel); border: 0;
+    border-bottom: 2px solid var(--ink); border-radius: 4px 4px 0 0; padding: 2px 6px; max-width: 100%; }
+  .field { display: block; margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+  .field input { display: block; width: 100%; margin-top: 4px; font: 400 16px var(--sans); padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--paper); color: var(--ink); }
+  .error { color: var(--no); }
   :focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
   [hidden] { display: none !important; }
 </style>
@@ -122,6 +134,33 @@
         <div class="now" id="now">Nothing is running.</div>
         <progress id="progress" hidden></progress>
         <ol class="steps" id="steps"></ol>
+      </section>
+    </div>
+    <div class="grid2 tight">
+      <section class="card" aria-labelledby="schedule-h">
+        <h2 id="schedule-h">Schedule</h2>
+        <label class="toggle"><input type="checkbox" id="sch-enabled"> Run a check automatically</label>
+        <fieldset class="plain" id="sch-body">
+          <div class="sentence small">
+            <select id="sch-plan" aria-label="What to run"><option value="mvp">Check for updates</option><option value="offline">Re-check saved data</option></select>
+            for <select id="sch-committee" aria-label="Committees"></select>
+            at <input type="time" id="sch-at" aria-label="Time" required>
+          </div>
+          <div class="chips" role="group" aria-label="Days" id="sch-days"></div>
+          <label class="toggle"><input type="checkbox" id="sch-full"> Search every document again</label>
+        </fieldset>
+        <p class="hint">Times are State House (Eastern) time. Scheduled checks run only while this control center is open.</p>
+        <div class="go"><button id="sch-save">Save schedule</button><span class="hint" id="sch-note"></span></div>
+        <p class="now" id="sch-next"></p>
+      </section>
+      <section class="card" aria-labelledby="send-h">
+        <h2 id="send-h">Send to the website</h2>
+        <label class="field">Site address <input type="url" id="tgt-url" autocomplete="off" spellcheck="false"></label>
+        <label class="field">Ingest key <input type="password" id="tgt-key" autocomplete="off"></label>
+        <p class="hint"><span id="tgt-key-note"></span> <button class="linkish" id="tgt-forget" hidden>Forget the saved key</button></p>
+        <label class="toggle"><input type="checkbox" id="tgt-auto"> Send results after every check</label>
+        <div class="go"><button id="tgt-save">Save</button><button class="secondary" id="push">Send now</button><span class="hint" id="tgt-note"></span></div>
+        <p class="now" id="push-last"></p>
       </section>
     </div>
     <div class="grid2">
@@ -178,12 +217,17 @@ const ANSWER = {Met: ["Yes", "yes"], Unmet: ["No", "no"], Provisional: ["Not yet
 const LABEL = {"Compliant": ["Followed every rule", "yes"], "Non-Compliant": ["Missed a rule", "no"], "Provisional": ["Not yet known", "wait"]};
 const REASON = {not_yet_due: "The deadline has not passed yet.", missing_data: "Some information is missing.",
                 ambiguous_timing: "The timing cannot be confirmed.", awaiting_review: "Waiting for a person to confirm a document."};
-let options, overview = [], results = null, filter = "all", shown = 50, current = null;
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const EASTERN = new Intl.DateTimeFormat("en-US", {timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit"});
+const eastern = (iso) => EASTERN.format(new Date(iso));
+let options, overview = [], results = null, filter = "all", shown = 50, current = null, control = null, running = false;
 
 async function getJson(url, init) {
   const r = await fetch(url, init); const body = await r.json();
   if (!r.ok) throw new Error(body.error || r.statusText); return body;
 }
+const sendJson = (url, method, body) => getJson(url, {method, headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+const committeeLabel = (c) => c.name.replace(/^(Joint|House|Senate) Committee on /, "the $1 Committee on ");
 
 async function init() {
   options = await getJson("/api/options");
@@ -192,10 +236,20 @@ async function init() {
   const select = $("committee");
   select.add(new Option("every committee", options.all_committees));
   const sorted = [...options.committees].sort((a, b) => (b.has_data - a.has_data) || a.name.localeCompare(b.name));
-  for (const c of sorted) select.add(new Option(c.name.replace(/^(Joint|House|Senate) Committee on /, "the $1 Committee on "), c.id));
+  for (const c of sorted) select.add(new Option(committeeLabel(c), c.id));
   const first = sorted.find((c) => c.has_data); if (first) select.value = first.id;
   $("plan").onchange = renderPlan; select.onchange = renderPlan; renderPlan();
   $("start").onclick = start;
+  const scheduled = $("sch-committee");
+  scheduled.add(new Option(`the usual committees (${options.defaults.committees.join(", ")})`, ""));
+  scheduled.add(new Option("every committee", options.all_committees));
+  for (const c of sorted) scheduled.add(new Option(committeeLabel(c), c.id));
+  $("sch-days").innerHTML = DAYS.map((d, i) => `<button type="button" data-day="${i}" aria-pressed="false">${d}</button>`).join("");
+  for (const b of document.querySelectorAll("#sch-days button")) b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+  $("sch-enabled").onchange = () => { $("sch-body").disabled = !$("sch-enabled").checked; $("sch-note").textContent = "Save to apply."; };
+  $("sch-save").onclick = saveSchedule; $("tgt-save").onclick = () => saveTarget(false);
+  $("tgt-forget").onclick = () => saveTarget(true); $("push").onclick = sendNow;
+  setInterval(() => { if (running) pollJob().catch(() => {}); }, 2000);
   $("back").onclick = () => { location.hash = ""; };
   for (const b of document.querySelectorAll("[data-filter]")) b.onclick = () => {
     filter = b.dataset.filter; shown = 50;
@@ -204,7 +258,8 @@ async function init() {
   $("search").oninput = () => { shown = 50; renderBills(); };
   $("more").onclick = () => { shown += 50; renderBills(); };
   window.onhashchange = route;
-  await Promise.all([loadOverview(), loadTimeline(), pollJob()]);
+  await Promise.all([loadOverview(), loadTimeline(), loadControl()]);
+  await pollJob();
   route();
 }
 
@@ -222,8 +277,10 @@ function renderSteps(stages, active, done) {
 
 function setState(kind, word, now) {
   $("dot").className = `dot ${kind}`; $("word").textContent = word; if (now != null) $("now").textContent = now;
-  $("progress").hidden = kind !== "running"; $("start").disabled = kind === "running";
-  if (kind !== "running") $("which").hidden = true;
+  running = kind === "running";
+  $("progress").hidden = !running; $("start").disabled = running;
+  if (!running) $("which").hidden = true;
+  renderPushButton();
 }
 
 function newRun(stages, committees) {
@@ -249,17 +306,22 @@ function renderWhich() {
 async function start() {
   const request = {plan: $("plan").value, committees: [$("committee").value], as_of: $("as-of").value || null, full: $("full").checked};
   try {
-    await getJson("/api/runs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(request)});
+    await sendJson("/api/runs", "POST", request);
     current = newRun(options.plans[request.plan]);
     renderSteps(current.stages, null, []); setState("running", "Running", "Starting...");
   } catch (error) { $("start-note").textContent = `Could not start: ${error.message}`; }
 }
 
 async function pollJob() {
-  const job = await getJson("/api/job");
+  const job = await getJson("/api/job"), wasRunning = running;
+  const run = job.request && job.request.run;
   if (job.status === "running") {
     const p = job.progress;
-    if (!current) current = newRun(options.plans[job.request.plan] || [job.request.stage], p ? p.committees : []);
+    if (!current) current = newRun(run ? (options.plans[run.plan] || [run.stage]) : [], p ? p.committees : []);
+    if (job.phase === "push") {
+      renderSteps(current.stages, null, current.stages);
+      setState("running", "Sending", "Sending results to the website"); $("which").hidden = true; return;
+    }
     if (p) {
       Object.assign(current, {committees: p.committees, position: p.position, committee: p.committee_id, active: p.stage});
       if (p.stage) $("now").textContent = `${DOING[p.stage] || p.stage}${p.stage_total ? `: ${p.done} of ${p.stage_total}` : ""}`;
@@ -267,10 +329,86 @@ async function pollJob() {
     }
     return setState("running", "Running", null);
   }
-  if (job.status === "succeeded") setState("done", "Done", "Finished. The results are up to date.");
+  const sent = job.pushed ? ` Sent ${job.pushed.run.committees.length} committee${job.pushed.run.committees.length === 1 ? "" : "s"} to the website.` : "";
+  if (job.status === "succeeded") setState("done", "Done", run ? `Finished. The results are up to date.${sent}` : `Finished.${sent}`);
+  else if (job.status === "failed" && job.phase === "push") setState("failed", "Not sent", "Sending to the website failed. See below.");
   else if (job.status === "failed") setState("failed", "Stopped", "The check stopped with an error. The log file has the details.");
   else setState("", "Ready", "Nothing is running.");
-  if (current) { renderSteps(current.stages, null, job.status === "succeeded" ? current.stages : current.done); current = null; }
+  renderPushResult(job);
+  if (current) { renderSteps(current.stages, null, job.status === "succeeded" || job.phase === "push" ? current.stages : current.done); current = null; }
+  if (wasRunning) loadControl();
+}
+
+async function loadControl() { control = await getJson("/api/control"); renderControl(); }
+
+function renderControl() {
+  const s = control.schedule, t = control.target;
+  $("sch-enabled").checked = s.enabled; $("sch-body").disabled = !s.enabled;
+  $("sch-plan").value = s.plan; $("sch-committee").value = s.committees.length ? s.committees[0] : "";
+  $("sch-at").value = s.at.slice(0, 5); $("sch-full").checked = s.full;
+  for (const b of document.querySelectorAll("#sch-days button")) b.setAttribute("aria-pressed", String(s.days.includes(Number(b.dataset.day))));
+  const last = control.last_scheduled;
+  const lastText = !last ? "" : last.outcome === "started" ? ` The last scheduled check started ${eastern(last.at)}.`
+    : ` The check due ${eastern(last.due)} was skipped: ${last.note}`;
+  $("sch-next").textContent = (control.next_run ? `Next check: ${eastern(control.next_run)}.` : "No check is scheduled.") + lastText;
+  $("tgt-url").value = t.saved_url || "";
+  $("tgt-url").placeholder = t.config_url ? `${t.config_url} (from beacon.toml)` : "https://tracker.example.org";
+  $("tgt-key").value = ""; $("tgt-key").placeholder = t.key_source === "saved" ? "Saved" : "";
+  $("tgt-key-note").textContent = t.key_source === "saved" ? "A key is saved for this site. Leave the box empty to keep it."
+    : t.key_source === "environment" ? `Using the key in ${t.key_env}. A key entered here takes its place.`
+    : `No key yet. Enter the ingest key the site created for this client, or set ${t.key_env}.`;
+  $("tgt-forget").hidden = t.key_source !== "saved"; $("tgt-auto").checked = t.auto;
+  if (!$("push-last").textContent) $("push-last").textContent = "Send now uploads the newest results for every committee checked.";
+  renderPushButton();
+}
+
+function renderPushButton() {
+  const ready = control && control.target.url && control.target.key_source;
+  $("push").disabled = running || !ready;
+  $("push").title = ready ? "" : "Save a site address and key first";
+}
+
+function renderPushResult(job) {
+  if (!job.request || !job.request.push || job.status === "running") return;
+  const box = $("push-last"), when = job.finished_at ? ago(job.finished_at) : "";
+  box.classList.toggle("error", job.status === "failed" && job.phase === "push");
+  if (job.pushed) {
+    const notes = job.pushed.changelog.updated;
+    box.textContent = `Sent ${when}: ${job.pushed.run.committees.join(", ")}. The site marked it ${job.pushed.run.status}.${notes.length ? ` Release notes updated for ${notes.join(", ")}.` : ""}`;
+  } else if (job.status === "failed" && job.phase === "push") box.textContent = `Sending failed ${when}: ${job.error}`;
+  else if (job.status === "succeeded") box.textContent = "The last check wrote no new results, so nothing was sent.";
+}
+
+const noteError = (id, error) => { $(id).textContent = error.message; $(id).classList.add("error"); };
+const note = (id, text) => { $(id).textContent = text; $(id).classList.remove("error"); };
+
+async function saveSchedule() {
+  const days = [...document.querySelectorAll("#sch-days button")].filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => Number(b.dataset.day));
+  const committee = $("sch-committee").value;
+  try {
+    control = await sendJson("/api/schedule", "PUT", {enabled: $("sch-enabled").checked, at: $("sch-at").value, days,
+      plan: $("sch-plan").value, committees: committee ? [committee] : [], full: $("sch-full").checked});
+    renderControl(); note("sch-note", "Saved.");
+  } catch (error) { noteError("sch-note", error); }
+}
+
+async function saveTarget(forget) {
+  const before = control.target.key_source, t = control.target;
+  const body = forget ? {url: t.saved_url, auto: t.auto, forget_key: true}
+    : {url: $("tgt-url").value.trim() || null, key: $("tgt-key").value || null, auto: $("tgt-auto").checked};
+  try {
+    control = await sendJson("/api/target", "PUT", body); renderControl();
+    const cleared = !forget && before === "saved" && control.target.key_source !== "saved";
+    note("tgt-note", forget ? "The saved key was forgotten." : cleared ? "Saved. The site address changed, so the saved key was cleared; enter it again." : "Saved.");
+  } catch (error) { noteError("tgt-note", error); }
+}
+
+async function sendNow() {
+  try {
+    await sendJson("/api/push", "POST", {});
+    current = newRun([]); renderSteps([], null, []);
+    setState("running", "Sending", "Sending results to the website"); note("tgt-note", "");
+  } catch (error) { noteError("tgt-note", error); }
 }
 
 function committeeName(id) { const c = options.committees.find((x) => x.id === id); return c ? c.name : id; }
