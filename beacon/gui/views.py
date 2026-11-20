@@ -243,6 +243,8 @@ def bill_detail(
                 if d.absent_before
                 else None,
                 "created_at": d.created_at.isoformat() if d.created_at else None,
+                "public_from": d.public_from.isoformat() if d.public_from else None,
+                "public_basis": d.public_basis.value if d.public_basis else None,
                 "vote_date": d.vote_date.isoformat() if d.vote_date else None,
                 "url": d.url,
             }

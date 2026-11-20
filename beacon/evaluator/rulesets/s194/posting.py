@@ -13,7 +13,7 @@ from beacon.domain.evaluation import (
 )
 from beacon.domain.ids import Chamber
 from beacon.domain.local_time import LEGISLATURE_TZ, local_date
-from beacon.domain.observations import DocumentKind
+from beacon.domain.observations import DocumentKind, PublicBasis
 from beacon.domain.provenance import ClauseRef, RuleSource
 from beacon.evaluator.facts import BillFacts, DocumentEvidence, Tenure
 from beacon.evaluator.rulesets.base import Obligation
@@ -25,6 +25,7 @@ _VOTE_CLAUSE = {Chamber.JOINT: JR1D_P14, Chamber.HOUSE: HR17B_P1}
 JR1B_P4 = ClauseRef(RuleSource.JOINT, "1B", 4)
 VOTE_WINDOW = timedelta(hours=48)
 LATE_TOLERANCE = timedelta(days=3)
+_BASIS_TEXT = {PublicBasis.SITE_POSTED: "posted", PublicBasis.FILE_CREATED: "created"}
 _AUTOMATIC_STUDY = re.compile(
     r"under\s+(?:House\s+Rule\s+27|Joint\s+Rule\s+10|JR\s?10)\b", re.I
 )
@@ -86,10 +87,14 @@ def _judge(
             detail = f"No complete search for the {label} has been recorded"
     elif evidence.first_seen_at is not None:
         completed_on = local_date(evidence.first_seen_at)
-        bounds = [b for b in (evidence.absent_before, evidence.created_at) if b]
+        bounds = [b for b in (evidence.absent_before, evidence.public_from) if b]
         earliest = max(bounds, default=None)
         if earliest is not None and earliest > window.late_after:
-            source = "absent" if earliest == evidence.absent_before else "created"
+            if earliest == evidence.absent_before:
+                source = "absent"
+            else:
+                assert evidence.public_basis is not None
+                source = _BASIS_TEXT[evidence.public_basis]
             detail = (
                 f"The {label} was {source} on {local_date(earliest)}, more than 3 days "
                 f"after the {local_date(window.due)} deadline"

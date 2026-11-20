@@ -1,6 +1,6 @@
 """Append-only facts about what a captured page said."""
 
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 from uuid import UUID
@@ -24,6 +24,13 @@ class DocumentKind(StrEnum):
 
     SUMMARY = "summary"
     VOTES = "votes"
+
+
+class PublicBasis(StrEnum):
+    """What shows the earliest moment a document copy could have been public."""
+
+    SITE_POSTED = "site_posted"
+    FILE_CREATED = "file_created"
 
 
 class Branch(StrEnum):
@@ -157,7 +164,13 @@ class VoteRecord(BaseModel):
 
 
 class DocumentPayload(BaseModel):
-    """What a captured summary or vote document says."""
+    """What a captured summary or vote document says.
+
+    created_at is the earliest file creation time across the copies found, and
+    public_from the earliest moment any copy could have been public: the start of
+    the day the site lists a copy as posted, else that copy's creation time. Both
+    are None unless every copy has one.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -165,11 +178,25 @@ class DocumentPayload(BaseModel):
     document_kind: DocumentKind
     url: str
     created_at: AwareDatetime | None = None
+    public_from: AwareDatetime | None = None
+    public_basis: PublicBasis | None = None
     vote_date: date | None = None
     motion: str | None = None
     tallies: dict[str, int] = {}
     records: tuple[VoteRecord, ...] = ()
     text_length: int = 0
+
+    @property
+    def public_bound(self) -> tuple[datetime, PublicBasis] | None:
+        """public_from and its basis.
+
+        A payload without public_from has created_at as its only bound.
+        """
+        if self.public_from is not None and self.public_basis is not None:
+            return self.public_from, self.public_basis
+        if self.created_at is not None:
+            return self.created_at, PublicBasis.FILE_CREATED
+        return None
 
 
 class HearingDocument(BaseModel):

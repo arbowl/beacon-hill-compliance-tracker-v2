@@ -3,6 +3,7 @@
 from datetime import UTC, date, datetime
 from pathlib import Path
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -13,6 +14,7 @@ from beacon.domain.observations import (
     DocumentPayload,
     DocumentSearchPayload,
     HearingDocument,
+    PublicBasis,
 )
 from beacon.scraper.documents.observe import (
     Fetched,
@@ -228,3 +230,47 @@ def test_summary_on_new_draft_committee_summary_tab():
     candidates = result["by_kind"][DocumentKind.SUMMARY]["document_search"].candidates
     assert [c.finder_id for c in candidates] == ["accompanying_summary_tab"]
     assert "H1646%20Bill%20Summary" in candidates[0].url
+
+
+ET = ZoneInfo("America/New_York")
+
+
+def hearing_vote(created_at: datetime | None) -> HearingDocument:
+    return HearingDocument(
+        url=f"{BASE}/Events/DownloadDocument?attachmentId=9",
+        title="H67 - Votes of House Committee Members",
+        bill_ids=("H67",),
+        created_at=created_at,
+    )
+
+
+def test_posting_date_bounds_a_copy_created_earlier():
+    tab = committee_doc(
+        DocumentKind.VOTES,
+        created_at=datetime(2025, 7, 2, 12, tzinfo=UTC),
+        posted_on=date(2025, 12, 10),
+    )
+    document = run("H67", {}, committee_docs=[tab])["by_kind"][DocumentKind.VOTES][
+        "document"
+    ]
+    assert document.public_from == datetime(2025, 12, 10, tzinfo=ET)
+    assert document.public_basis == PublicBasis.SITE_POSTED
+    assert document.created_at == datetime(2025, 7, 2, 12, tzinfo=UTC)
+
+
+def test_earliest_public_copy_wins():
+    hearing = hearing_vote(datetime(2025, 7, 3, 9, tzinfo=UTC))
+    tab = committee_doc(DocumentKind.VOTES, posted_on=date(2025, 12, 10))
+    document = run("H67", {}, [hearing], [tab])["by_kind"][DocumentKind.VOTES][
+        "document"
+    ]
+    assert document.public_from == datetime(2025, 7, 3, 9, tzinfo=UTC)
+    assert document.public_basis == PublicBasis.FILE_CREATED
+
+
+def test_undated_copy_leaves_public_moment_unknown():
+    tab = committee_doc(DocumentKind.VOTES, posted_on=date(2025, 12, 10))
+    document = run("H67", {}, [hearing_vote(None)], [tab])["by_kind"][
+        DocumentKind.VOTES
+    ]["document"]
+    assert document.public_from is None and document.public_basis is None

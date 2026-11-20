@@ -15,6 +15,7 @@ from beacon.domain.observations import (
     HistoryRow,
     Observation,
     Payload,
+    PublicBasis,
 )
 from beacon.reporters.base import EvidenceSource
 from beacon.reporters.evidence import describe
@@ -90,3 +91,22 @@ def test_undated_document_says_its_date_is_retrieval():
     )
     assert item.url == "https://x/doc.pdf"
     assert "undated" in item.text
+
+
+def test_site_posted_document_is_dated_by_posting():
+    payload = DocumentPayload(
+        document_kind=DocumentKind.VOTES,
+        url="https://x/doc.pdf",
+        created_at=datetime(2025, 7, 2, 16, tzinfo=UTC),
+        public_from=datetime(2025, 12, 10, 5, tzinfo=UTC),
+        public_basis=PublicBasis.SITE_POSTED,
+    )
+    observation, capture = _observation(payload)
+    item = describe(
+        EvidenceRef(observation_id=observation.observation_id), observation, capture
+    )
+    assert item.text == (
+        "The committee vote record, file created 2025-07-02, "
+        "first posted on the site 2025-12-10"
+    )
+    assert item.occurred_on == date(2025, 12, 10)

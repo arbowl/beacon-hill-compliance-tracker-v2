@@ -11,6 +11,7 @@ from beacon.domain.observations import (
     DocumentSearchPayload,
     HearingPayload,
     Observation,
+    PublicBasis,
 )
 from beacon.reporters.base import EvidenceItem, EvidenceSource
 
@@ -72,12 +73,15 @@ def describe(
             if payload.created_at:
                 created = local_date(payload.created_at).isoformat()
                 parts.append(f"file created {created}")
+            if payload.public_from and payload.public_basis == PublicBasis.SITE_POSTED:
+                posted = local_date(payload.public_from).isoformat()
+                parts.append(f"first posted on the site {posted}")
             if len(parts) == 1:
                 parts.append("undated; the date shown is when it was retrieved")
+            public = payload.public_bound
             return EvidenceItem(
                 EvidenceSource.DOCUMENT,
-                payload.vote_date
-                or (local_date(payload.created_at) if payload.created_at else seen_on),
+                payload.vote_date or (local_date(public[0]) if public else seen_on),
                 ", ".join(parts),
                 payload.url,
             )

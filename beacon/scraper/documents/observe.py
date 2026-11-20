@@ -11,11 +11,12 @@ search is exhaustive when every finder ran and none of its fetches failed.
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, time
 from uuid import NAMESPACE_URL, uuid5
 
 from beacon.adapters.documents import read_document
 from beacon.domain.captures import Capture
+from beacon.domain.local_time import LEGISLATURE_TZ
 from beacon.domain.observations import (
     ActionType,
     BillHistoryPayload,
@@ -26,6 +27,7 @@ from beacon.domain.observations import (
     DocumentSearchPayload,
     HearingDocument,
     Observation,
+    PublicBasis,
     VoteRecord,
 )
 from beacon.scraper.documents import bill_tabs
@@ -177,10 +179,22 @@ def _observation(
 class _Found:
     candidate: DocumentCandidate
     created_at: datetime | None = None
+    posted_on: date | None = None
     vote_date: date | None = None
     motion: str | None = None
     tallies: Mapping[str, int] | None = None
     records: tuple[VoteRecord, ...] = ()
+
+    @property
+    def public_from(self) -> tuple[datetime, PublicBasis] | None:
+        """The site's posting date wins over file creation: it is when the public
+        could see this copy. The site gives no time, so the day's start counts."""
+        if self.posted_on is not None:
+            start = datetime.combine(self.posted_on, time.min, LEGISLATURE_TZ)
+            return start, PublicBasis.SITE_POSTED
+        if self.created_at is not None:
+            return self.created_at, PublicBasis.FILE_CREATED
+        return None
 
 
 def _panel(
@@ -316,20 +330,29 @@ def _committee_tab(
                     confidence=0.85 if doc.from_content else 0.95,
                 ),
                 created_at=doc.created_at,
+                posted_on=doc.posted_on,
             )
         )
     return found
 
 
 def _document(kind: DocumentKind, found: list[_Found]) -> DocumentPayload:
-    """Combine candidates; a creation date counts only if every candidate has one."""
+    """Combine candidates; a date counts only if every candidate has one.
+
+    The document was public once any copy was, so the earliest copy's date wins.
+    """
     created = [f.created_at for f in found]
     known = [c for c in created if c is not None]
+    bounds = [f.public_from for f in found]
+    dated = [b for b in bounds if b is not None]
+    public = min(dated, key=lambda b: b[0]) if len(dated) == len(bounds) else None
     vote = next((f for f in found if f.vote_date), None)
     return DocumentPayload(
         document_kind=kind,
         url=found[0].candidate.url,
         created_at=min(known) if known and len(known) == len(created) else None,
+        public_from=public[0] if public else None,
+        public_basis=public[1] if public else None,
         vote_date=vote.vote_date if vote else None,
         motion=vote.motion if vote else None,
         tallies=dict(vote.tallies or {}) if vote else {},

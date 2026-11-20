@@ -16,6 +16,7 @@ from beacon.domain.observations import (
     HearingPayload,
     HistoryRow,
     Observation,
+    PublicBasis,
 )
 
 ET = ZoneInfo("America/New_York")
@@ -119,9 +120,10 @@ def document(
     *,
     committee_id: str = "J19",
     created_at: str | None = None,
+    posted_from: str | None = None,
     vote_date: str | None = None,
 ) -> Observation:
-    """A captured document observation."""
+    """A captured document observation; posted_from is a site posting moment."""
     return Observation(
         observation_id=uuid4(),
         capture_id=uuid4(),
@@ -135,6 +137,8 @@ def document(
             document_kind=document_kind,
             url=f"https://x/{bill_id}/{document_kind.value}",
             created_at=_moment(created_at) if created_at else None,
+            public_from=_moment(posted_from) if posted_from else None,
+            public_basis=PublicBasis.SITE_POSTED if posted_from else None,
             vote_date=date.fromisoformat(vote_date) if vote_date else None,
         ),
     )

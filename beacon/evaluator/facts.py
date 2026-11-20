@@ -17,6 +17,7 @@ from beacon.domain.observations import (
     HearingPayload,
     HistoryRow,
     Observation,
+    PublicBasis,
 )
 
 TERMINAL_ACTIONS = frozenset(
@@ -118,7 +119,8 @@ class DocumentEvidence:
     """What searches show about one kind of document for one committee.
 
     absent_before is the latest exhaustive search that found nothing, before the
-    document was first seen (or ever, if it never was).
+    document was first seen (or ever, if it never was). public_from is the earliest
+    moment it could have been public, and public_basis what shows that.
     """
 
     document_kind: DocumentKind
@@ -126,6 +128,8 @@ class DocumentEvidence:
     first_seen_at: datetime | None
     absent_before: datetime | None
     created_at: datetime | None
+    public_from: datetime | None
+    public_basis: PublicBasis | None
     vote_date: date | None
     url: str | None
     evidence: tuple[EvidenceRef, ...]
@@ -309,6 +313,7 @@ def _document_evidence(
         key=lambda t: t[0],
     )
     latest = documents[-1][1] if documents else None
+    public = latest.public_bound if latest else None
     evidence_obs = ([found[0]] if found else []) + [t[2] for t in documents[-1:]]
     return DocumentEvidence(
         document_kind=key[0],
@@ -316,6 +321,8 @@ def _document_evidence(
         first_seen_at=first_seen,
         absent_before=max(absent, default=None),
         created_at=latest.created_at if latest else None,
+        public_from=public[0] if public else None,
+        public_basis=public[1] if public else None,
         vote_date=latest.vote_date if latest else None,
         url=latest.url if latest else None,
         evidence=tuple(

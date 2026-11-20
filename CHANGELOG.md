@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vote records and bill summaries that a committee posts on its Documents tab, such as
   poll results, now count as posted. Several committees publish their votes only there.
 
+### Changed
+
+- Whether a summary or vote record was posted on time is now judged by the date
+  malegislature.gov lists it as posted, when the site shows one, rather than the date
+  the file was created. That is when the public could first see it. If the same
+  document appeared earlier elsewhere on the site, the earlier date counts.
+- Ruleset s194, version 6.
+
 ### Fixed
 
 - Committee vote records attached to a hearing now count as posted votes. Previously

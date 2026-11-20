@@ -11,7 +11,7 @@ from beacon.domain.observations import DocumentCandidate, DocumentKind, VoteReco
 from beacon.scraper.history.committees import normalize_committee_name
 
 FINDER_ID = "bill_tabs"
-FINDER_VERSION = 8
+FINDER_VERSION = 9
 _TABS = {
     "CommitteeSummary": (DocumentKind.SUMMARY, "Committee Summary tab"),
     "PrimarySponsorSummary": (DocumentKind.SUMMARY, "Primary Sponsor Summary tab"),
