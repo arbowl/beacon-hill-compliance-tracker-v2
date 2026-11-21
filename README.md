@@ -55,7 +55,7 @@ uv sync
 ```toml
 data_dir = "data"          # store, blobs, reports, logs, events
 session = 194
-committees = ["J19"]       # default scope; "all" = every listed committee
+committees = ["J19"]       # default scope; "all" = every listed committee, "joint" = joint only
 ruleset = "s194"
 rules_dir = "rules"        # verbatim JOINT.md, HOUSE.md, SENATE.md
 
@@ -79,6 +79,7 @@ Global options go before the command.
 uv run beacon run mvp                         # default committees, full pipeline
 uv run beacon --committee J45 run mvp         # one committee (repeatable)
 uv run beacon --committee all run mvp         # every committee (long)
+uv run beacon --committee joint run mvp       # every joint committee
 uv run beacon run offline                     # re-check stored data, no network
 uv run beacon --as-of 2026-03-18 evaluate     # as things stood on a date
 uv run beacon --full scrape                   # search every bill's documents again

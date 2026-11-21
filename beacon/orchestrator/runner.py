@@ -26,6 +26,7 @@ from beacon.adapters.run_lock import RunLock
 from beacon.adapters.sqlite_store import SqliteStore
 from beacon.config import Settings
 from beacon.domain.events import CommitteeStarted, PlanFinished, PlanStarted
+from beacon.domain.ids import Chamber
 from beacon.domain.local_time import LEGISLATURE_TZ
 from beacon.evaluator.clauses import ClauseIndex
 from beacon.orchestrator import stages
@@ -131,23 +132,29 @@ def _reporters(ctx: Context, v1: Path | None) -> list[Reporter]:
 
 
 ALL_COMMITTEES = "all"
+ALL_JOINT_COMMITTEES = "joint"
 
 
 def _scope(ctx: Context, request: RunRequest) -> tuple[str, ...]:
     committees = request.committees or ctx.settings.committees
-    if ALL_COMMITTEES not in committees:
+    if ALL_COMMITTEES not in committees and ALL_JOINT_COMMITTEES not in committees:
         return tuple(committees)
     if Stage.COLLECT in request.stages:
-        return tuple(stages.collect_committees(ctx))
-    known = ctx.store.inventory.committees(ctx.settings.session)
-    return tuple(c.committee_id for c in known)
+        listed = stages.collect_committees(ctx)
+    else:
+        known = ctx.store.inventory.committees(ctx.settings.session)
+        listed = [c.committee_id for c in known]
+    if ALL_COMMITTEES in committees:
+        return tuple(listed)
+    return tuple(c for c in listed if Chamber.from_prefix(c[0]) == Chamber.JOINT)
 
 
 def execute(ctx: Context, request: RunRequest) -> list[Path]:
     """Run the request committee by committee; returns report files written.
 
     Re-extraction spans all stored data, so it runs once, first. "all" means
-    every committee the site lists, refreshed when collecting.
+    every committee the site lists, refreshed when collecting; "joint" means
+    only the joint committees among them.
     """
     committees = _scope(ctx, request)
     plan_id, started = uuid4(), monotonic()

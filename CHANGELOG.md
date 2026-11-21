@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - These release notes are published on the Tracker website alongside the findings.
 - Vote records and bill summaries that a committee posts on its Documents tab, such as
   poll results, now count as posted. Several committees publish their votes only there.
+- Checks can now cover every joint committee at once, leaving out House and Senate
+  committees.
 
 ### Changed
 
