@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "beacon-contract",
     "beautifulsoup4>=4.15.0",
+    "cryptography>=3.1",
     "httpx>=0.28.1",
     "pydantic>=2.9",
     "pypdf>=7.1.1",

@@ -15,7 +15,12 @@ from beacon.evaluator.clauses import ClauseIndex
 from beacon.evaluator.facts import project
 from beacon.gui.control import ControlPreferences, resolve
 from beacon.gui.scheduler import ScheduledAttempt
-from beacon.orchestrator.runner import ALL_COMMITTEES, PLANS, SITE_KEY_ENV
+from beacon.orchestrator.runner import (
+    ALL_COMMITTEES,
+    ALL_JOINT_COMMITTEES,
+    PLANS,
+    SITE_KEY_ENV,
+)
 from beacon.ports.store import Stage
 from beacon.scraper.history.committees import COMMITTEE_REGISTRY
 
@@ -48,6 +53,7 @@ def options(settings: Settings, store: SqliteStore) -> dict[str, Any]:
         "committees": committees,
         "defaults": {"committees": list(settings.committees)},
         "all_committees": ALL_COMMITTEES,
+        "all_joint_committees": ALL_JOINT_COMMITTEES,
         "flags": {
             "as_of": "See how things stood on an earlier date",
             "full": (

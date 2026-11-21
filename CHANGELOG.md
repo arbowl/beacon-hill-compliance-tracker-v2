@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   found on malegislature.gov.
 - Findings judged against an older version of a rule's text are flagged.
 - A per-committee audit report showing how each finding was derived.
+- Checks can now cover every joint committee at once, leaving out House and Senate
+  committees.
 
 ### Changed
 
