@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-11-19
 
 ### Added
 
@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - These release notes are published on the Tracker website alongside the findings.
 - Vote records and bill summaries that a committee posts on its Documents tab, such as
   poll results, now count as posted. Several committees publish their votes only there.
+- Checks each bill referred to a committee in the 194th General Court against four
+  requirements: reporting by the deadline (Joint Rule 10, House Rule 27), announcing
+  hearings in advance (Joint Rule 1D, Senate Rule 12, House Rule 17A), posting a
+  plain-language summary (Joint Rule 1B), and posting committee votes (Joint Rule 1D,
+  House Rule 17B).
+- Ruleset s194, version 5.
+- Every finding cites the verbatim rule text it was judged against and the evidence
+  found on malegislature.gov.
+- Findings judged against an older version of a rule's text are flagged.
+- A per-committee audit report showing how each finding was derived.
 
 ### Changed
 
@@ -29,20 +39,246 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they were mistaken for the bill's summary, which could show a summary as posted when
   it was not.
 
-## [0.1.0] - 2026-11-19
+
+## [1.4.7] - 2026-06-08
+
+### Fixed
+- Bill history table reporting date extensions will no longer be factored in for Senate bills in Joint committees. This may cause some bills to drop from "Provisional" to "Non-Compliant" if the original deadline passed and compliance requirements were still unmet.
+
+
+## [1.4.6] - 2026-05-24
 
 ### Added
+- Extended the accompanied-bill traversal pattern (used to recover votes and committee summaries packaged with a related bill) to also follow "Accompanied a new draft, see H/Sxxx" cross-references, in addition to the existing study order traversal.
+- Parsers which traverse bill pages to find documentation may now execute a sub-search with the other available parser types to find matching bill patterns corresponding with the origin committee.
+- Bills whose hearing action carries no committee name (typically "Resolves" and cross-branch bills that were never explicitly referred) will now have their hearing date recovered when the bill had only a single committee tenure and no other committee has a labelled hearing. Previously these resolved as "no hearing scheduled" and were left as Provisional, or in rare cases, Non-Compliant if other compliance-gating factors were present.
 
-- Checks each bill referred to a committee in the 194th General Court against four
-  requirements: reporting by the deadline (Joint Rule 10, House Rule 27), announcing
-  hearings in advance (Joint Rule 1D, Senate Rule 12, House Rule 17A), posting a
-  plain-language summary (Joint Rule 1B), and posting committee votes (Joint Rule 1D,
-  House Rule 17B).
-- Ruleset s194, version 5.
-- Every finding cites the verbatim rule text it was judged against and the evidence
-  found on malegislature.gov.
-- Findings judged against an older version of a rule's text are flagged.
-- A per-committee audit report showing how each finding was derived.
 
-[unreleased]: https://github.com/arbowl/beacon-hill-compliance-tracker-v2/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/arbowl/beacon-hill-compliance-tracker-v2/releases/tag/v0.1.0
+## [1.4.5] - 2026-05-23
+
+### Added
+- In cases where a bill is accompanied by a study order and the study order's Committee Summary tab contains a summary file specifically for that bill (identified by bill ID in the document row), the parser will now retrieve and extract that document as the bill's committee summary.
+
+### Fixed
+- Corrected a display-only bug introduced with a recent caching system upgrade that caused the "Top Movers" dashboard widget to superficially report thousands of "newly discovered" bills each night. (No actual compliance determinations were affected; this was purely a visual bug isolated to that one widget.)
+
+
+## [1.4.4] - 2026-05-18
+
+### Fixed
+- Senate bills in Joint Committees that receive a study order before any hearing is held are now correctly evaluated for deadline compliance rather than being classified as Provisional. Previously, the absence of a hearing date caused these bills to fall through to an early-exit Provisional path, even though referral -> study order is a complete terminal disposition under Joint Rule 10.
+
+
+## [1.4.3] - 2026-05-12
+
+### Fixed
+- Added logic to differentiate between "discharged *from*" and "discharged *to*" in bill action timelines, rather than always assuming the former.
+- In cases where two sets of votes are present in the same "Committee Vote" tab, the vote parser will now traverse both sets to detect a vote posting for the current committee being processsed.
+- Addressed a compound pattern regex issue (reported, referred, reported, referred) which prevented the final action from superseding all previous actions.
+
+
+## [1.4.2] - 2026-04-16
+
+### Fixed
+
+- Corrected an issue where scraping on-page bill summaries would no longer properly render the summary as posted, which broke regular detection.
+- Improved on-page vote detection for cases where the underlying format looks slightly different than usual.
+
+
+## [1.4.1] - 2026-04-02
+
+### Fixed
+- Days of the week in dates for which there is no comma after the day of the week, as in "Friday April 3, 2026" (as opposed to "Friday**,** April 3, 2026") will now be properly extracted from bill timelines.
+
+
+## [1.4.0] - 2026-02-18
+
+### Changed
+- The presence of a single vote for a bill will no longer automatically count towards compliance for all committees that handled it. That behavior will only persist in the event the committee cannot be extracted from the vote content. Instead, the vote tracker will attempt to match only the committee that posted the vote to the committee being analyzed.
+
+
+## [1.3.2] - 2026-02-11
+
+### Added
+- In cases where a bill does not have a vote posted, but it accompanied a study order, and the corresponding bill page does have a vote posted, the parser will traverse the latter bill page to search for vote postings.
+
+
+## [1.3.1] - 2026-01-09
+
+### Added
+- Expanded the title formats the vote document parser will use to find valid vote packets in hearing "Documents" tabs, allowing for increased vote packet detection accuracy where applicable.
+
+
+## [1.3.0] - 2025-12-23
+
+### Changed
+- Senate-origin bills in joint committees now begin the report-out countdown at the referral date, per Joint Rule 10, even when no hearing date has been announced yet.
+- Senate deadlines have been formally computed and encoded in the ruleset engine for the current session in accordance with Joint Rule 10.
+
+
+## [1.2.2] - 2025-12-13
+
+### Added
+- New logic for differentiating between "hearing announced", "hearing rescheduled", "hearing time changed", and "hearing location changed" with sub-conditions for evaluating a bill's chain of custody within a committee tenure window.
+
+### Changed
+- Clerical timeline updates (such as retroactive end-time adjustments to reflect the record as it happened) will not count as hearing reannouncements that reset the hearing notice timer. Reschedules without original announcements will count as non-compliant.
+- Per a functional reading of the Joint Rules, changes to the hearing location and/or time (but not the date) are allowed outside of a 72-hour window prior to the hearing; material changes to the format of a hearing within that window will count as non-compliant.
+
+
+## [1.2.1] - 2025-12-07
+
+### Changed
+- The reason audit log for individual bill non-compliance will now list all valid non-compliance factors within the given deadline window, rather than just deal-breakers (such as hearing notice). This only affects display text, not compliance logic or user-facing presence checks.
+
+
+## [1.2.0] - 2025-12-05
+
+### Added
+- New timeline engine for stricter report-out, hearing, and referral parsing.
+- Smarter deadline compliance inference and calculation.
+- Report-out compliance logic now bundles the reported-out date alongside the binary presence check, which will enrich datasets, unlock additional insights, and allow for future UI elements.
+- Expanding report-out logic to be conscious of rules-based deadlines beyond basic 60/90 day compliance by incorporating October, December, January, and March deadlines as prescribed in Joint Rules for 2026 preparedness.
+- Added support for vote date detection, allowing further compliance granularity checking (not yet counted for compliance)
+
+### Deprecated
+- Old bill action parser which handled report-outs, hearing announcements, and hearing date anchors.
+
+### Fixed
+- Carved out report-out deadline exception for the Joint Committee on Health Care Financing based on Joint Rule 19.
+
+
+## [1.1.10] - 2025-11-21
+
+### Changed
+- Hearing notice compliance calculations will only revolve around announcements, rather than using known hearing dates as a fallback, to better align with the principle of citizens' being properly alerted of hearings.
+
+### Fixed
+- Improved reported-out parsing in cases where bills were reported out of many committees and heard multiple times (addressess some edge cases, but negligible overall impact on compliance percentage).
+- Improved hearing notice assignments when bills have had multiple hearings and hearing reschedules.
+
+
+## [1.1.9] - 2025-11-20
+
+### Added
+- I added a RULESET194.md file to the GitHub repo for plain-English auditiability of the current Session's ruleset. Binary compliance checks aren't subjective, but categorization of ambiguous or incomplete data demands a common, transparent rationale.
+
+### Changed
+- Reported-out logic didn't change, but the dictintion between "no action", "on-time action", "late action", and "date-uncertain action" did not properly propogate to the final non-compliance reasoning.
+- Vote records embedded in bill page tabs will now link directly to the tab (as with summaries) rather than just to the bill page.
+
+### Fixed
+- Bills which have been reported out in the past but which are currently handled by a committee that has not yet posted a hearing may have misleadingly registered as "reported out" when technically they have not yet been acted upon by the current committee. Reflecting this on the dashboard is purely a visual change which doesn't impact compliance or violation count, but will more closely align with the intent of the tracker.
+
+
+## [1.1.8] - 2025-11-19
+
+### Added
+- Votes can now be parsed from House and Senate Journal PDFs and attributed to the proper bills (may raise compliance in some cases).
+- Self-tests rolled in for several document parsers to ensure functionality across updates.
+- Created an internal "ruleset engine" module to improve algorithmic transparency, improve alignment with the Legislature ruleset, and track rules changes session-to-session.
+
+### Changed
+- "Hearing rescheduled" will now count as a hearing date even if "hearing scheduled" is not present (may boost compliance if a bill was previously marked as missing a hearing date, or it may drop compliance if all other requirements were met but the hearing is revealed to be non-compliant--see "Fixes").
+
+### Fixed
+- Bills which posted all requirements but never announced a hearing will be considered non-compliant with the notice gap requirement (may drop compliance for some committees).
+
+
+## [1.1.7] - 2025-11-14
+
+### Fixed
+- Reported-out deadline tracking is now more aggressive, catching more instances of non-compliance. This may cause some committees to drop in compliance.
+
+
+## [1.1.6] - 2025-11-13
+
+### Added
+- Caching for documentation to preserve historical Legislature records
+- Legislative session tracking; will automatically reset for the 195th session and archive the 194th session data.
+- Now tracking Senate with included Senate rules.
+
+### Changed
+- Tightened summary detection rules out of an abundance of caution (no change in compliance recorded)
+
+
+## [1.1.5] - 2025-11-12
+
+### Fixed
+- Deduplicate bill lists when computing compliance deltas to better align the change percentage with that which is reported by the dashboard
+
+### Added
+- Retroactive deduplication for historical compliance deltas to correct percentage gains for accurate future trend analysis
+
+
+## [1.1.4] - 2025-11-08
+
+### Fixed
+- Bills will not report a hearing notice number if they got reported out prior to a future committee's hearing (purely visual, no impact on compliance)
+
+
+## [1.1.3] - 2025-11-06
+
+### Added
+- Implemented support for more date formats (e.g. 11/04/2025 vs. 11/4/2025 vs. 11-4-2025, etc.)
+
+### Changed
+- Bills which have announcements but aren't linked in a hearing docket yet will be considered "announced"
+- Increased confidence level for on-page summaries with unusual formatting
+
+### Fixed
+- Tweaked user-facing language when a hearing gap was computed but a date was not listed
+
+
+## [1.1.2] - 2025-11-05
+
+### Added
+- Fast-fail when Legislature document server is down
+- Track votes in the trend analysis
+
+### Changed
+- Auto-generated analysis tweaked for grammar and verbosity
+  
+### Fixed
+- Bills with hearings added not always updating compliance
+- Trend percentage now absolute, rather than multiplicative
+
+
+## [1.1.1] - 2025-10-31
+
+### Fixed
+- Streamlined auto-generated analysis blurb creation
+- Reduced uncertainty in analysis and tracking
+
+
+## [1.1.0] - 2025-10-30
+
+### Added
+- Day-by-day tracking of committees
+- Auto-generated summary of new compliance developments
+- Optional LLM-boosted analysis
+- New API fields for daily tracking
+
+
+## [1.0.0] - 2025-10-28
+
+### Added
+- Initial release of Beacon Hill Compliance Tracker
+- Committee compliance tracking and monitoring
+- Bill status collection from Massachusetts Legislature website
+- Extension order tracking and management
+- Hearing information collection
+- Committee contact information gathering
+- Automated compliance deadline calculations
+- Document caching system for improved performance
+- LLM-powered document parsing assistance
+- Interactive and console-based review interfaces
+- Comprehensive parser system for various document formats
+- JSON export functionality for compliance reports
+- Email notification system for compliance updates
+- Version tracking and changelog system
+- API endpoint for changelog distribution
+
+### Security
+- Implemented document content hashing for cache validation
+- Added secure configuration management via YAML
