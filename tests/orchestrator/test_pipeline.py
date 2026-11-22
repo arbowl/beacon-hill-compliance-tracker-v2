@@ -433,7 +433,18 @@ def test_all_committees_collects_the_listing_first(ctx: Context):
     runner.execute(offline, RunRequest(stage=Stage.EVALUATE, committees=("all",)))
 
 
-def test_joint_committees_leave_out_house_and_senate(ctx: Context):
+@pytest.mark.parametrize(
+    ("scope", "expected"),
+    [
+        (("joint",), ("J19",)),
+        (("house",), ("H33",)),
+        (("senate",), ("S30",)),
+        (("house", "senate"), ("H33", "S30")),
+    ],
+)
+def test_chamber_scopes_keep_only_that_chambers_committees(
+    ctx: Context, scope: tuple[str, ...], expected: tuple[str, ...]
+):
     assert isinstance(ctx.fetcher, FixtureFetcher)
     ctx.fetcher.pages[f"{BASE}/Committees/Joint"] = (
         b'<a href="/Committees/Detail/J19">The Judiciary</a>'
@@ -444,18 +455,14 @@ def test_joint_committees_leave_out_house_and_senate(ctx: Context):
     ctx.fetcher.pages[f"{BASE}/Committees/Senate"] = (
         b'<a href="/Committees/Detail/S30">Ways and Means</a>'
     )
+    assert set(stages.collect_committees(ctx)) == {"J19", "H33", "S30"}
     recording = Recording()
     runner.execute(
-        replace(ctx, events=recording),
-        RunRequest(stage=Stage.COLLECT, committees=("joint",)),
+        replace(ctx, fetcher=OfflineFetcher(), events=recording),
+        RunRequest(stage=Stage.EVALUATE, committees=scope),
     )
     (plan,) = [e for e in recording.events if isinstance(e, PlanStarted)]
-    assert plan.committees == ("J19",)
-    assert {c.committee_id for c in ctx.store.inventory.committees(194)} == {
-        "J19",
-        "H33",
-        "S30",
-    }
+    assert plan.committees == expected
 
 
 def test_plan_reports_committee_progress(ctx: Context):

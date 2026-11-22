@@ -132,12 +132,13 @@ def _reporters(ctx: Context, v1: Path | None) -> list[Reporter]:
 
 
 ALL_COMMITTEES = "all"
-ALL_JOINT_COMMITTEES = "joint"
+CHAMBER_SCOPES: dict[str, Chamber] = {c.value.lower(): c for c in Chamber}
 
 
 def _scope(ctx: Context, request: RunRequest) -> tuple[str, ...]:
     committees = request.committees or ctx.settings.committees
-    if ALL_COMMITTEES not in committees and ALL_JOINT_COMMITTEES not in committees:
+    chambers = {CHAMBER_SCOPES[c] for c in committees if c in CHAMBER_SCOPES}
+    if ALL_COMMITTEES not in committees and not chambers:
         return tuple(committees)
     if Stage.COLLECT in request.stages:
         listed = stages.collect_committees(ctx)
@@ -146,15 +147,15 @@ def _scope(ctx: Context, request: RunRequest) -> tuple[str, ...]:
         listed = [c.committee_id for c in known]
     if ALL_COMMITTEES in committees:
         return tuple(listed)
-    return tuple(c for c in listed if Chamber.from_prefix(c[0]) == Chamber.JOINT)
+    return tuple(c for c in listed if Chamber.from_prefix(c[0]) in chambers)
 
 
 def execute(ctx: Context, request: RunRequest) -> list[Path]:
     """Run the request committee by committee; returns report files written.
 
     Re-extraction spans all stored data, so it runs once, first. "all" means
-    every committee the site lists, refreshed when collecting; "joint" means
-    only the joint committees among them.
+    every committee the site lists, refreshed when collecting; "joint", "house"
+    and "senate" mean only that chamber's committees among them.
     """
     committees = _scope(ctx, request)
     plan_id, started = uuid4(), monotonic()

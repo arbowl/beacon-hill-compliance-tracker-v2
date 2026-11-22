@@ -234,8 +234,9 @@ async function init() {
   const s = options.session;
   $("session").textContent = `${s}th General Court, ${2025 + 2 * (s - 194)}-${2026 + 2 * (s - 194)}`;
   const select = $("committee");
+  const scopes = Object.entries(options.chamber_scopes);
   select.add(new Option("every committee", options.all_committees));
-  select.add(new Option("every joint committee", options.all_joint_committees));
+  for (const [id, name] of scopes) select.add(new Option(`every ${name} committee`, id));
   const sorted = [...options.committees].sort((a, b) => (b.has_data - a.has_data) || a.name.localeCompare(b.name));
   for (const c of sorted) select.add(new Option(committeeLabel(c), c.id));
   const first = sorted.find((c) => c.has_data); if (first) select.value = first.id;
@@ -244,7 +245,7 @@ async function init() {
   const scheduled = $("sch-committee");
   scheduled.add(new Option(`the usual committees (${options.defaults.committees.join(", ")})`, ""));
   scheduled.add(new Option("every committee", options.all_committees));
-  scheduled.add(new Option("every joint committee", options.all_joint_committees));
+  for (const [id, name] of scopes) scheduled.add(new Option(`every ${name} committee`, id));
   for (const c of sorted) scheduled.add(new Option(committeeLabel(c), c.id));
   $("sch-days").innerHTML = DAYS.map((d, i) => `<button type="button" data-day="${i}" aria-pressed="false">${d}</button>`).join("");
   for (const b of document.querySelectorAll("#sch-days button")) b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
@@ -267,7 +268,9 @@ async function init() {
 
 function renderPlan() {
   const plan = $("plan").value;
-  $("plan-explain").textContent = EXPLAIN[plan] + ({[options.all_committees]: " Every committee takes much longer.", [options.all_joint_committees]: " Every joint committee takes much longer."}[$("committee").value] || "");
+  const scope = $("committee").value, chamber = options.chamber_scopes[scope];
+  const slow = scope === options.all_committees ? " Every committee takes much longer." : chamber ? ` Every ${chamber} committee takes much longer.` : "";
+  $("plan-explain").textContent = EXPLAIN[plan] + slow;
   if (!current) renderSteps(options.plans[plan], null, []);
 }
 

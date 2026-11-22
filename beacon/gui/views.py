@@ -17,7 +17,7 @@ from beacon.gui.control import ControlPreferences, resolve
 from beacon.gui.scheduler import ScheduledAttempt
 from beacon.orchestrator.runner import (
     ALL_COMMITTEES,
-    ALL_JOINT_COMMITTEES,
+    CHAMBER_SCOPES,
     PLANS,
     SITE_KEY_ENV,
 )
@@ -53,7 +53,7 @@ def options(settings: Settings, store: SqliteStore) -> dict[str, Any]:
         "committees": committees,
         "defaults": {"committees": list(settings.committees)},
         "all_committees": ALL_COMMITTEES,
-        "all_joint_committees": ALL_JOINT_COMMITTEES,
+        "chamber_scopes": {scope: c.value for scope, c in CHAMBER_SCOPES.items()},
         "flags": {
             "as_of": "See how things stood on an earlier date",
             "full": (
