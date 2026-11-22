@@ -49,6 +49,28 @@ def test_adverse_report_under_joint_rule_is_a_report():
     assert A.REPORTED in [t for t, _ in classify(text)]
 
 
+@pytest.mark.parametrize(
+    ("text", "committee_id"),
+    [
+        (
+            "Reported, referred to the committee on Joint Rules, reported, rules "
+            "suspended and referred to the committee on Public Health",
+            "J16",
+        ),
+        (
+            "Reported, referred to the committee on Joint Rules, reported, rules "
+            "suspended, question divided (on motion of Fiola), and referred (on "
+            "motion of Fiola) to the committee on Economic Development and "
+            "Emerging Technologies",
+            "J12",
+        ),
+    ],
+)
+def test_compound_referral_takes_the_last_committee(text: str, committee_id: str):
+    referrals = [d for t, d in classify(text) if t == A.REFERRED]
+    assert [d["committee_id"] for d in referrals] == [committee_id]
+
+
 def test_classify_unknown_and_compound():
     assert classify("Something novel") == [(A.UNKNOWN, {})]
     kinds = [t for t, _ in classify("Accompanied a study order, see H5281")]

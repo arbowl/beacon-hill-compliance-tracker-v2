@@ -1,4 +1,7 @@
-"""Hearing notice: JR 1D paras 4-5 (joint), SR 12 para 2 (Senate), HR 17A(e) (House)."""
+"""Hearing notice: JR 1D paras 4-5 (joint), SR 12 para 2 (Senate), HR 17A(e) (House).
+
+The House committee on Rules is not subject to HR 17A's notice provisions (HR 7B).
+"""
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -23,6 +26,8 @@ JR1D_P4 = ClauseRef(RuleSource.JOINT, "1D", 4)
 JR1D_P5 = ClauseRef(RuleSource.JOINT, "1D", 5)
 SR12_P2 = ClauseRef(RuleSource.SENATE, "12", 2)
 HR17A_P15 = ClauseRef(RuleSource.HOUSE, "17A", 15)
+HR7B_P1 = ClauseRef(RuleSource.HOUSE, "7B", 1)
+HOUSE_RULES = "H33"
 RULES_EFFECTIVE = date(2025, 6, 26)
 AMENDMENT_DAYS = 3
 _INITIAL_DAYS = {Chamber.JOINT: 10, Chamber.SENATE: 5, Chamber.HOUSE: 3}
@@ -141,11 +146,18 @@ class HearingNotice:
     """Hearings must be announced, with the required notice, before they are held."""
 
     requirement_id: str = S194Requirement.HEARING_NOTICE.value
-    clauses: tuple[ClauseRef, ...] = (JR1D_P4, JR1D_P5, SR12_P2, HR17A_P15)
+    clauses: tuple[ClauseRef, ...] = (JR1D_P4, JR1D_P5, SR12_P2, HR17A_P15, HR7B_P1)
 
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
-        """One obligation per committee tenure with a hearing."""
-        if _chamber(tenure) not in _INITIAL_DAYS or not tenure.hearing_dates():
+        """One obligation per committee tenure with a hearing.
+
+        None for House Rules, which HR 7B exempts from HR 17A's notice provisions.
+        """
+        if (
+            _chamber(tenure) not in _INITIAL_DAYS
+            or tenure.committee_id == HOUSE_RULES
+            or not tenure.hearing_dates()
+        ):
             return []
         return [
             Obligation(

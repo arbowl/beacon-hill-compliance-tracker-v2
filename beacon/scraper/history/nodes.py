@@ -119,10 +119,13 @@ def create_action_nodes() -> list[ActionNode]:
             action_type=ActionType.REFERRED,
             category="referral-committee",
             patterns=[
-                # Compound action: extract LAST referral (most recent committee)
+                # Compound action: extract LAST referral (most recent committee).
+                # Any procedural steps may sit between the report and the final
+                # referral, e.g. "rules suspended, question divided (on motion of
+                # X), and referred (on motion of X) to the committee on ...".
                 re.compile(
                     r"referred\s+to\s+the\s+committee\s+on\s+[^,]+(?:,\s+[^,]+)*,?\s+"
-                    r"(?:reported|discharged)[^,]*,?\s+(?:rules\s+suspended\s+and\s+)?"
+                    r"(?:reported|discharged)\b.*?\b"
                     r"referred\s+(?:.*?\s+)?to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),

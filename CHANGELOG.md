@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-11-22
+
+### Changed
+
+- The House Committee on Rules is no longer checked for hearing notice. House Rule 7B
+  exempts it from the notice provisions of House Rule 17A.
+- Ruleset s194, version 7.
+
+### Fixed
+
+- Committees that hold no hearings, such as the House Committee on Rules, can now have
+  their vote records judged. Previously their empty hearings list was not recorded,
+  so the search for a vote record never counted as complete. Bills those committees
+  reported stayed Provisional indefinitely, even when no vote record was ever posted.
+  Such bills may now move from "Provisional" to "Non-Compliant" under House Rule 17B.
+- A bill history entry that lists extra procedural steps before the final referral, such
+  as "rules suspended, question divided (on motion of ...), and referred (on motion of ...)
+  to the committee on ...", is now read as a referral to that last committee.
+
 ## [2.0.0] - 2026-11-19
 
 ### Added
