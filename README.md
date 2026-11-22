@@ -24,11 +24,11 @@ over old data and parser fixes can be applied to pages already captured.
   +-----------+   (captures + observations)             | sqlite  |
                                                         | + blobs |
   +-----------+   re-derive observations from stored    |         |
-  | reextract |<------------- ------------------------->|         |
+  | reextract |<--------------------------------------->|         |
   +-----------+   captures when an extractor changes    |         |
                                                         |         |
   +-----------+   facts -> ruleset (s194) -> verdicts   |         |
-  | evaluate  |<----------- --------------------------->|         |
+  | evaluate  |<--------------------------------------->|         |
   +-----------+   with derivations and rule citations   |         |
                                                         |         |
   +-----------+   JSON export, HTML audit report        |         |
