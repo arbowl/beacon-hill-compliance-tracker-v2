@@ -63,6 +63,8 @@ def test_recommittal_is_a_referral():
             },
         )
     ]
+
+
 @pytest.mark.parametrize(
     ("text", "committee_id"),
     [
@@ -183,3 +185,81 @@ def test_committee_documents_have_origin_and_no_evaluation(clause_index: ClauseI
         else:
             assert len(facts.origin.source_bills) > 300
         assert evaluate(facts, "J19", RULESET, clause_index, AS_OF, uuid4()) == []
+
+
+def _table(*rows: tuple[str, str, str]) -> bytes:
+    cells = "".join(
+        f"<tr><td>{d}</td><td>{b}</td><td>{t}</td></tr>" for d, b, t in rows
+    )
+    return f"<table>{cells}</table>".encode()
+
+
+def _of(rows, action_type):
+    return [(r.row_index, r.committee_id) for r in rows if r.action_type == action_type]
+
+
+@pytest.mark.parametrize(
+    ("branch", "committee_id"), [("House", "H36"), ("Senate", "S31")]
+)
+def test_order_to_third_reading_refers_to_the_branch_committee(
+    branch: str, committee_id: str
+):
+    rows = parse_history(
+        _table(
+            ("07/17/2025", branch, "Read second and ordered to a third reading"),
+            (
+                "09/18/2025",
+                branch,
+                "Read third (title changed) and passed to be engrossed",
+            ),
+        )
+    ).rows
+    assert _of(rows, A.REFERRED_TO_BILLS_IN_THIRD_READING) == [(0, committee_id)]
+    assert _of(rows, A.READ_THIRD) == [(1, committee_id)]
+
+
+@pytest.mark.parametrize(
+    ("branch", "text", "committee_id"),
+    [
+        ("House", "Referred to the committee on Bills in the Third Reading", "H36"),
+        ("Senate", "Referred to the committee on Bills in the Third Reading", "S31"),
+        (
+            "Senate",
+            "Referred to the committee on Senate Bills in the Third Reading",
+            "S31",
+        ),
+    ],
+)
+def test_named_third_reading_referral_follows_the_branch(
+    branch: str, text: str, committee_id: str
+):
+    rows = parse_history(_table(("07/17/2025", branch, text))).rows
+    assert {r.committee_id for r in rows if r.committee_id} == {committee_id}
+
+
+@pytest.mark.parametrize(
+    ("branch", "text", "committee_id"),
+    [
+        ("Senate", "Bills in the Third Reading report accepted", "S31"),
+        ("Senate", "Bill in the Third Reading report accepted", "S31"),
+        (
+            "Senate",
+            "Bills in the Third Reading report (consolidated with S545 ) accepted",
+            "S31",
+        ),
+        (
+            "Senate",
+            "Bills in the Third Reading new draft substituted, see S3133",
+            "S31",
+        ),
+        (
+            "Senate",
+            "Reported from the committee on Senate Bills in the Third Reading",
+            "S31",
+        ),
+        ("House", "Bills in the Third Reading special report accepted", "H36"),
+    ],
+)
+def test_third_reading_committee_reports(branch: str, text: str, committee_id: str):
+    rows = parse_history(_table(("07/17/2025", branch, text))).rows
+    assert _of(rows, A.REPORTED) == [(0, committee_id)]

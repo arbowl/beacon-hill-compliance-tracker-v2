@@ -8,7 +8,7 @@ from beacon.evaluator.rulesets.s194.report_out import ReportOutDeadline
 
 RULESET = Ruleset(
     ruleset_id="s194",
-    version="8",
+    version="9",
     requirements=(
         ReportOutDeadline(),
         HearingNotice(),

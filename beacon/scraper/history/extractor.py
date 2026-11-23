@@ -14,14 +14,20 @@ from beacon.domain.observations import (
     HistoryRow,
     Observation,
 )
-from beacon.scraper.history.committees import normalize_committee_name
+from beacon.scraper.history.committees import (
+    THIRD_READING_COMMITTEES,
+    normalize_committee_name,
+)
 from beacon.scraper.history.nodes import ACTION_NODES
 
 EXTRACTOR_ID = "bill_history"
-EXTRACTOR_VERSION = 7
+EXTRACTOR_VERSION = 8
 _DATE_FORMATS = ("%m/%d/%Y", "%B %d, %Y")
 _NODES = sorted(ACTION_NODES, key=lambda n: n.priority)
 _BILL_MENTION = re.compile(r"\b([HS])\.?\s?(\d{1,5})\b")
+_OF_THIRD_READING = frozenset(
+    {ActionType.REFERRED_TO_BILLS_IN_THIRD_READING, ActionType.READ_THIRD}
+)
 
 
 def _parse_date(text: str) -> date | None:
@@ -67,6 +73,25 @@ def _title(soup: BeautifulSoup) -> str | None:
     return None
 
 
+def _committee_id(
+    action_type: ActionType, data: dict[str, object], branch: Branch, on: date
+) -> str | None:
+    """The committee a row concerns; Bills in the Third Reading by its branch."""
+    raw = data.get("committee")
+    committee_id = (
+        normalize_committee_name(raw, on)
+        if isinstance(raw, str)
+        else data.get("committee_id")
+    )
+    if (
+        action_type in _OF_THIRD_READING
+        or data.get("third_reading")
+        or committee_id in THIRD_READING_COMMITTEES.values()
+    ):
+        return THIRD_READING_COMMITTEES.get(branch.value)
+    return committee_id if isinstance(committee_id, str) else None
+
+
 def parse_history(body: bytes, bill_id: str | None = None) -> BillHistoryPayload:
     """Classify each dated row of the bill page's history table."""
     soup = BeautifulSoup(body, "html.parser")
@@ -83,23 +108,16 @@ def parse_history(body: bytes, bill_id: str | None = None) -> BillHistoryPayload
         if action_date is None:
             continue
         mentioned = related_bills(action_text, bill_id)
+        branch = Branch.parse(branch_text)
         for action_type, data in classify(action_text):
-            raw_committee = data.get("committee")
-            committee_id = (
-                normalize_committee_name(raw_committee, action_date)
-                if isinstance(raw_committee, str)
-                else data.get("committee_id")
-            )
             rows.append(
                 HistoryRow(
                     row_index=index,
                     action_date=action_date,
-                    branch=Branch.parse(branch_text),
+                    branch=branch,
                     raw_text=action_text,
                     action_type=action_type,
-                    committee_id=committee_id
-                    if isinstance(committee_id, str)
-                    else None,
+                    committee_id=_committee_id(action_type, data, branch, action_date),
                     hearing_date=_iso(data.get("hearing_date")),
                     new_deadline=_iso(data.get("new_deadline")),
                     related_bills=mentioned,

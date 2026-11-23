@@ -505,6 +505,11 @@ _COMMITTEES: list[CommitteeAlias] = [
     ),
 ]
 
+THIRD_READING_COMMITTEES: dict[str, str] = {"House": "H36", "Senate": "S31"}
+"""Each chamber's committee on Bills in the Third Reading, by history branch. The
+histories name either one "Bills in the Third Reading", or only record the order
+to a third reading that refers the bill (House Rule 22, Senate Rule 33)."""
+
 # Create lookup dictionary for fast access by ID
 COMMITTEE_REGISTRY: dict[str, CommitteeAlias] = {c.id: c for c in _COMMITTEES}
 

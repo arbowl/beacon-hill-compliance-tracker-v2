@@ -196,7 +196,8 @@ def create_action_nodes() -> list[ActionNode]:
             category="committee-passage",
             patterns=[
                 re.compile(
-                    r"Reported\s+by\s+the\s+committee\s+on\s+(?P<committee>.+)", re.I
+                    r"Reported\s+(?:by|from)\s+the\s+committee\s+on\s+(?P<committee>.+)",
+                    re.I,
                 ),
                 re.compile(r"Reported\s+favorably\s+by\s+committee", re.I),
                 re.compile(r"Reported\s+adversely\s+by\s+committee", re.I),
@@ -537,7 +538,34 @@ def create_action_nodes() -> list[ActionNode]:
             category="referral-committee",
             patterns=[
                 re.compile(
-                    r"Referred\s+to\s+the\s+committee\s+on\s+Bills\s+in\s+the\s+Third\s+Reading",
+                    r"Referred\s+to\s+the\s+committee\s+on\s+(?:House\s+|Senate\s+)?"
+                    r"Bills\s+in\s+the\s+Third\s+Reading",
+                    re.I,
+                ),
+                # House Rule 22 and Senate Rule 33 refer a bill to the committee
+                # "forthwith" when it is ordered to a third reading; the history
+                # usually records only the order.
+                re.compile(r"ordered\s+to\s+a\s+third\s+reading", re.I),
+            ],
+            priority=15,
+        )
+    )
+
+    nodes.append(
+        ActionNode(
+            action_type=ActionType.REPORTED,
+            category="committee-passage",
+            patterns=[
+                # The chamber accepting the committee's report; the committee is
+                # resolved from the row's branch.
+                re.compile(
+                    r"(?P<third_reading>Bills?\s+in\s+the\s+Third\s+Reading)\s+"
+                    r"(?:special\s+)?report\b.*?\baccepted",
+                    re.I,
+                ),
+                re.compile(
+                    r"(?P<third_reading>Bills?\s+in\s+the\s+Third\s+Reading)\s+"
+                    r"new\s+draft\s+substituted",
                     re.I,
                 ),
             ],

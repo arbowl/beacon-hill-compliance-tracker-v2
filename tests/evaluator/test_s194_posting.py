@@ -149,6 +149,16 @@ class TestVotesPosted:
         ]
         assert results(VotesPosted(), rows, [], "2026-04-01") == []
 
+    def test_bills_in_the_third_reading_owes_no_vote(self):
+        rows = [
+            row("2025-10-16", A.REFERRED_TO_BILLS_IN_THIRD_READING, "H36"),
+            row("2025-11-06", A.READ_THIRD, "H36"),
+        ]
+        facts = project(BillKey(194, "S23"), [history("S23", rows)])
+        (tenure,) = facts.tenures_for("H36")
+        assert tenure.report is not None
+        assert VotesPosted().obligations(facts, tenure) == []
+
     def test_unreported_without_vote_has_no_obligation(self):
         assert results(VotesPosted(), HEARD, [], "2025-11-18") == []
 

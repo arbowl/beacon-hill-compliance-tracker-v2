@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from beacon.domain.ids import BillKey
 from beacon.domain.observations import ActionType as A
+from beacon.domain.observations import Branch
 from beacon.evaluator.facts import project
 from tests.builders import hearing, history, row
 
@@ -360,3 +361,63 @@ def test_announcement_stays_without_a_later_committee_confirming_the_hearing():
     (old,) = facts.tenures_for("J38")
     assert [n.announced_on for n in old.hearing_notices] == [date(2025, 6, 26)]
     assert facts.tenures_for("J45")[0].hearing_notices == ()
+
+
+def test_third_reading_tenure_runs_from_the_order_to_the_reading():
+    obs = history(
+        "S23",
+        [
+            row("2025-03-06", A.REFERRED, "J10", branch=Branch.SENATE),
+            row("2025-06-18", A.REPORTED, None, branch=Branch.SENATE),
+            row(
+                "2025-07-17",
+                A.REFERRED_TO_BILLS_IN_THIRD_READING,
+                "S31",
+                branch=Branch.SENATE,
+            ),
+            row("2025-09-18", A.READ_THIRD, "S31", branch=Branch.SENATE),
+            row("2025-09-22", A.REFERRED, "H52"),
+        ],
+    )
+    facts = project(BillKey(194, "S23"), [obs])
+    (tenure,) = facts.tenures_for("S31")
+    assert tenure.referred_on == date(2025, 7, 17)
+    assert tenure.report is not None
+    assert tenure.report.reported_on == date(2025, 9, 18)
+    assert tenure.discharged_on is None
+    assert facts.tenures_for("J10")[0].discharged_on is None
+
+
+def test_ordered_and_read_third_in_one_row_opens_then_closes():
+    obs = history(
+        "S1",
+        [
+            row("2025-02-01", A.REFERRED, "J19"),
+            row("2025-05-01", A.REPORTED, "J19"),
+            [
+                row("2025-06-01", A.READ_THIRD, "S31", branch=Branch.SENATE),
+                row(
+                    "2025-06-01",
+                    A.REFERRED_TO_BILLS_IN_THIRD_READING,
+                    "S31",
+                    branch=Branch.SENATE,
+                ),
+            ],
+        ],
+    )
+    (tenure,) = project(BillKey(194, "S1"), [obs]).tenures_for("S31")
+    assert tenure.report is not None
+    assert tenure.report.reported_on == date(2025, 6, 1)
+
+
+def test_reading_without_its_referral_closes_nothing():
+    obs = history(
+        "H1",
+        [
+            row("2025-02-01", A.REFERRED, "H34"),
+            row("2025-05-01", A.READ_THIRD, "H36"),
+        ],
+    )
+    facts = project(BillKey(194, "H1"), [obs])
+    assert facts.tenures_for("H34")[0].report is None
+    assert facts.tenures_for("H36") == ()

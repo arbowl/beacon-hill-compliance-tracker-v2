@@ -24,7 +24,13 @@ from beacon.domain.observations import (
 TERMINAL_ACTIONS = frozenset(
     {ActionType.REPORTED, ActionType.STUDY_ORDER, ActionType.ACCOMPANIED}
 )
-REFERRAL_ACTIONS = frozenset({ActionType.REFERRED, ActionType.DISCHARGED})
+REFERRAL_ACTIONS = frozenset(
+    {
+        ActionType.REFERRED,
+        ActionType.DISCHARGED,
+        ActionType.REFERRED_TO_BILLS_IN_THIRD_READING,
+    }
+)
 HEARING_ACTIONS = frozenset(
     {
         ActionType.HEARING_SCHEDULED,
@@ -287,7 +293,9 @@ def _open_on(builders: list[_TenureBuilder], on: date) -> _TenureBuilder | None:
 
 
 def _ordered_rows(obs: Observation) -> list[HistoryRow]:
-    """Rows by date and table order; within a row, terminal actions first."""
+    """Rows by date and table order; within a row, terminal actions, then
+    referrals, then the rest, so "ordered to a third reading, read third" opens
+    the tenure the reading closes."""
     assert isinstance(obs.payload, BillHistoryPayload)
     return sorted(
         obs.payload.rows,
@@ -295,6 +303,7 @@ def _ordered_rows(obs: Observation) -> list[HistoryRow]:
             r.action_date,
             r.row_index,
             r.action_type not in TERMINAL_ACTIONS,
+            r.action_type not in REFERRAL_ACTIONS,
         ),
     )
 
@@ -361,7 +370,11 @@ def _tenures(
             tenure.extensions.append(
                 Extension(r.action_date, r.new_deadline, r.branch, r.raw_text, ref)
             )
-        elif r.action_type in TERMINAL_ACTIONS:
+        elif r.action_type in TERMINAL_ACTIONS or (
+            # Read third: out of Bills in the Third Reading, the only committee a
+            # history attributes the reading to.
+            r.action_type == ActionType.READ_THIRD and r.committee_id is not None
+        ):
             tenure.report = Report(r.action_date, r.action_type, r.raw_text, ref)
     return tuple(b.build(bill) for b in builders)
 

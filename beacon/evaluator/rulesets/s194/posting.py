@@ -23,6 +23,9 @@ JR1D_P14 = ClauseRef(RuleSource.JOINT, "1D", 14)
 HR17B_P1 = ClauseRef(RuleSource.HOUSE, "17B", 1)
 _VOTE_CLAUSE = {Chamber.JOINT: JR1D_P14, Chamber.HOUSE: HR17B_P1}
 JR1B_P4 = ClauseRef(RuleSource.JOINT, "1B", 4)
+BILLS_IN_THE_THIRD_READING = "H36"
+"""Examines and corrects bills ordered to a third reading (House Rule 22), reporting
+changes as amendments; it takes no vote on the legislation for HR 17B to record."""
 VOTE_WINDOW = timedelta(hours=48)
 LATE_TOLERANCE = timedelta(days=3)
 _BASIS_TEXT = {PublicBasis.SITE_POSTED: "posted", PublicBasis.FILE_CREATED: "created"}
@@ -157,7 +160,10 @@ class VotesPosted:
 
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
         """Owed once the committee voted: a vote record, or a non-automatic report."""
-        if _chamber(tenure) not in _VOTE_CLAUSE:
+        if (
+            _chamber(tenure) not in _VOTE_CLAUSE
+            or tenure.committee_id == BILLS_IN_THE_THIRD_READING
+        ):
             return []
         evidence = facts.document(DocumentKind.VOTES, tenure.committee_id)
         voted = evidence is not None and evidence.vote_date is not None

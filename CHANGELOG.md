@@ -13,9 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   orders them before the deadline has passed (Joint Rule 30).
 - Hearing notice is now judged once per hearing, on the announcement that set its
   date (ruleset s194 v8).
+- The House Committee on Bills in the Third Reading is no longer checked for posted
+  votes. It examines and corrects bills ordered to a third reading (House Rule 22) and
+  takes no vote on them for House Rule 17B to record (ruleset s194 v9).
 
 ### Fixed
 
+- A bill ordered to a third reading is now tracked as referred to that chamber's
+  committee on Bills in the Third Reading (House Rule 22, Senate Rule 33), until it is
+  read third or the committee's report is accepted. Previously only an explicit
+  "Referred to the committee on Bills in the Third Reading" counted, which the
+  histories rarely record, so most bills listed by those committees were judged
+  Provisional with no referral found.
 - A committee vote posted on the bill that reported another in part, as with
   "Reported, in part, by H4000" or "Reported on a part of H4931", now counts for the
   bill reported. Previously only the bill's own Committee Vote tab and bills it
