@@ -1,6 +1,7 @@
-"""Hearing notice: JR 1D paras 4-5 (joint), SR 12 para 2 (Senate), HR 17A(e) (House).
+"""Hearing notice: JR 1D para 4 (joint), SR 12 para 2 (Senate), HR 17A(e) (House).
 
-The House committee on Rules is not subject to HR 17A's notice provisions (HR 7B).
+Each hearing is judged on the announcement that set its date. The House committee
+on Rules is not subject to HR 17A's notice provisions (HR 7B).
 """
 
 from dataclasses import dataclass
@@ -18,25 +19,27 @@ from beacon.domain.ids import Chamber
 from beacon.domain.local_time import local_date
 from beacon.domain.observations import ActionType
 from beacon.domain.provenance import ClauseRef, RuleSource
-from beacon.evaluator.facts import BillFacts, Tenure
+from beacon.evaluator.facts import BillFacts, Hearing, Tenure
 from beacon.evaluator.rulesets.base import Obligation
 from beacon.evaluator.rulesets.s194.requirements import S194Requirement
 
 JR1D_P4 = ClauseRef(RuleSource.JOINT, "1D", 4)
-JR1D_P5 = ClauseRef(RuleSource.JOINT, "1D", 5)
 SR12_P2 = ClauseRef(RuleSource.SENATE, "12", 2)
 HR17A_P15 = ClauseRef(RuleSource.HOUSE, "17A", 15)
 HR7B_P1 = ClauseRef(RuleSource.HOUSE, "7B", 1)
 HOUSE_RULES = "H33"
 RULES_EFFECTIVE = date(2025, 6, 26)
-AMENDMENT_DAYS = 3
-_INITIAL_DAYS = {Chamber.JOINT: 10, Chamber.SENATE: 5, Chamber.HOUSE: 3}
-_INITIAL_CLAUSE = {
-    Chamber.JOINT: JR1D_P4,
-    Chamber.SENATE: SR12_P2,
-    Chamber.HOUSE: HR17A_P15,
+_REQUIRED_DAYS = {Chamber.JOINT: 10, Chamber.SENATE: 5, Chamber.HOUSE: 3}
+_PERIOD = {
+    Chamber.JOINT: "10 days",
+    Chamber.SENATE: "5 days",
+    Chamber.HOUSE: "72 hours",
 }
-_CHANGES = (ActionType.HEARING_LOCATION_CHANGED, ActionType.HEARING_TIME_CHANGED)
+_CLAUSE = {Chamber.JOINT: JR1D_P4, Chamber.SENATE: SR12_P2, Chamber.HOUSE: HR17A_P15}
+_CHANGES = {
+    ActionType.HEARING_TIME_CHANGED: "Time change",
+    ActionType.HEARING_LOCATION_CHANGED: "Location change",
+}
 
 
 @dataclass(frozen=True)
@@ -45,6 +48,7 @@ class _Notice:
     announced_on: date
     hearing_date: date
     required: int
+    period: str
     clause: ClauseRef
     evidence: EvidenceRef
 
@@ -61,12 +65,9 @@ class _Notice:
         return not self.exempt and self.days < self.required
 
     def describe(self) -> str:
-        period = (
-            "72 hours" if self.required == AMENDMENT_DAYS else f"{self.required} days"
-        )
         return (
             f"{self.label} posted {self.announced_on} for the {self.hearing_date} "
-            f"hearing: {self.days} days' notice, {period} required"
+            f"hearing: {self.days} days' notice, {self.period} required"
         )
 
 
@@ -74,71 +75,58 @@ def _chamber(tenure: Tenure) -> Chamber:
     return Chamber.from_prefix(tenure.committee_id[0])
 
 
-def _notices(
-    tenure: Tenure, chamber: Chamber
-) -> tuple[list[_Notice], list[DerivationStep]]:
-    """Port of v1's notice walk: judge each announcement against the hearing it set."""
-    records: list[_Notice] = []
-    notes: list[DerivationStep] = []
-    current: date | None = None
-    announcements = sorted(
-        (n for n in tenure.hearing_notices if n.announced_on is not None),
-        key=lambda n: n.announced_on or date.min,
+def _judged(hearing: Hearing, chamber: Chamber) -> _Notice | None:
+    notice = hearing.notice
+    if notice is None or notice.announced_on is None:
+        return None
+    label = (
+        "New hearing date"
+        if notice.action_type == ActionType.HEARING_RESCHEDULED
+        else "Hearing notice"
     )
-    for n in announcements:
-        assert n.announced_on is not None
-        if n.action_type in (
-            ActionType.HEARING_SCHEDULED,
-            ActionType.HEARING_RESCHEDULED,
-        ):
-            if n.hearing_date is None:
-                continue
-            current = n.hearing_date
-        elif n.action_type not in _CHANGES or current is None:
+    return _Notice(
+        label,
+        notice.announced_on,
+        hearing.hearing_date,
+        _REQUIRED_DAYS[chamber],
+        _PERIOD[chamber],
+        _CLAUSE[chamber],
+        notice.evidence,
+    )
+
+
+def _set_aside(hearing: Hearing) -> list[DerivationStep]:
+    """One step per announcement of the hearing other than the one judged."""
+    steps: list[DerivationStep] = []
+    held = hearing.hearing_date
+    counted = False
+    for n in hearing.notices:
+        if n == hearing.notice:
+            counted = True
             continue
-        retroactive = n.announced_on >= current
-        earlier = {r.hearing_date for r in records}
-        duplicate = n.action_type == ActionType.HEARING_SCHEDULED and current in earlier
-        if (
-            retroactive
-            and records
-            and (n.action_type != ActionType.HEARING_SCHEDULED or duplicate)
-        ):
-            notes.append(
-                DerivationStep(
-                    description=(
-                        f"Update posted {n.announced_on}, on or after the {current} "
-                        "hearing: clerical correction, not judged"
-                    ),
-                    value=n.announced_on,
-                )
+        if n.announced_on is None:
+            continue
+        if n.action_type in _CHANGES:
+            text = (
+                f"{_CHANGES[n.action_type]} posted {n.announced_on} for the {held} "
+                "hearing: not judged"
             )
-            continue
-        new_date = n.action_type == ActionType.HEARING_SCHEDULED or (
-            n.action_type == ActionType.HEARING_RESCHEDULED and current not in earlier
-        )
-        if new_date:
-            label = "Hearing notice" if not records else "New hearing date"
-            required, clause = _INITIAL_DAYS[chamber], _INITIAL_CLAUSE[chamber]
-        elif chamber == Chamber.JOINT:
-            label = "Hearing change"
-            required, clause = AMENDMENT_DAYS, JR1D_P5
+        elif not counted and hearing.notice is not None:
+            text = (
+                f"Notice posted {n.announced_on} for {n.hearing_date}: superseded "
+                f"when the hearing was set for {held}"
+            )
+        elif n.announced_on >= held:
+            text = (
+                f"Update posted {n.announced_on}, on or after the {held} hearing: "
+                "clerical correction, not judged"
+            )
         else:
-            notes.append(
-                DerivationStep(
-                    description=(
-                        f"Change posted {n.announced_on}: {chamber.value} rules set "
-                        "no notice period for changes to a scheduled hearing"
-                    ),
-                    value=n.announced_on,
-                    clause=_INITIAL_CLAUSE[chamber],
-                )
+            text = (
+                f"Restatement of the {held} hearing posted {n.announced_on}: not judged"
             )
-            continue
-        records.append(
-            _Notice(label, n.announced_on, current, required, clause, n.evidence)
-        )
-    return records, notes
+        steps.append(DerivationStep(description=text, value=n.announced_on))
+    return steps
 
 
 @dataclass(frozen=True)
@@ -146,7 +134,7 @@ class HearingNotice:
     """Hearings must be announced, with the required notice, before they are held."""
 
     requirement_id: str = S194Requirement.HEARING_NOTICE.value
-    clauses: tuple[ClauseRef, ...] = (JR1D_P4, JR1D_P5, SR12_P2, HR17A_P15, HR7B_P1)
+    clauses: tuple[ClauseRef, ...] = (JR1D_P4, SR12_P2, HR17A_P15, HR7B_P1)
 
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
         """One obligation per committee tenure with a hearing.
@@ -154,7 +142,7 @@ class HearingNotice:
         None for House Rules, which HR 7B exempts from HR 17A's notice provisions.
         """
         if (
-            _chamber(tenure) not in _INITIAL_DAYS
+            _chamber(tenure) not in _REQUIRED_DAYS
             or tenure.committee_id == HOUSE_RULES
             or not tenure.hearing_dates()
         ):
@@ -171,10 +159,23 @@ class HearingNotice:
     def check(
         self, obligation: Obligation, facts: BillFacts, tenure: Tenure, as_of: datetime
     ) -> RequirementResult:
-        """Judge every announcement, and every hearing that had none."""
+        """Judge each hearing on the announcement that set its date."""
         chamber = _chamber(tenure)
         today = local_date(as_of)
-        records, steps = _notices(tenure, chamber)
+        hearings = tenure.hearings()
+        records = [r for h in hearings if (r := _judged(h, chamber)) is not None]
+        steps = [s for h in hearings for s in _set_aside(h)]
+        if steps:
+            steps.append(
+                DerivationStep(
+                    description=(
+                        "Tracker policy: each hearing is judged on the announcement "
+                        "that set its date; restatements, corrections, and time or "
+                        "place updates are not judged"
+                    ),
+                    role=StepRole.TOLERANCE,
+                )
+            )
         steps.append(
             DerivationStep(
                 description=(
@@ -194,9 +195,8 @@ class HearingNotice:
                     role=StepRole.TRIGGER,
                 )
             )
-        announced = {r.hearing_date for r in records}
-        required = _INITIAL_DAYS[chamber]
-        unannounced = [d for d in tenure.hearing_dates() if d not in announced]
+        required = _REQUIRED_DAYS[chamber]
+        unannounced = [h.hearing_date for h in hearings if _judged(h, chamber) is None]
         missing = [d for d in unannounced if d >= RULES_EFFECTIVE]
         overdue = [d for d in missing if today >= d - timedelta(days=required)]
         pending = [d for d in missing if d not in overdue]
@@ -205,7 +205,7 @@ class HearingNotice:
                 DerivationStep(
                     description=f"No announcement found for the {d} hearing",
                     value=d - timedelta(days=required),
-                    clause=_INITIAL_CLAUSE[chamber],
+                    clause=_CLAUSE[chamber],
                     role=StepRole.BASE_DUE,
                 )
             )
@@ -240,10 +240,7 @@ class HearingNotice:
             detail = (
                 f"Hearings held before {RULES_EFFECTIVE}: exempt from notice periods"
             )
-        evidence = [tenure.referral, *(r.evidence for r in records)]
-        evidence += [
-            n.evidence for n in tenure.hearing_notices if n.announced_on is None
-        ]
+        evidence = [tenure.referral, *(n.evidence for h in hearings for n in h.notices)]
         return RequirementResult(
             requirement_id=self.requirement_id,
             obligation_id=obligation.obligation_id,

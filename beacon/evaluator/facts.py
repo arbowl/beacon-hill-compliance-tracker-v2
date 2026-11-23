@@ -49,6 +49,77 @@ class HearingNotice:
 
 
 @dataclass(frozen=True)
+class Hearing:
+    """One hearing of a tenure, as its announcements resolve.
+
+    notice is the announcement that set hearing_date, or None for a hearing known
+    only from a docket listing. notices holds every announcement attributed to the
+    hearing in posting order: the notice, restatements of its date, time and
+    place updates, and announcements of dates it was moved from.
+    """
+
+    hearing_date: date
+    notice: HearingNotice | None
+    notices: tuple[HearingNotice, ...]
+
+
+@dataclass
+class _Draft:
+    hearing_date: date
+    notice: HearingNotice | None
+    notices: list[HearingNotice]
+
+
+def _schedule(notices: Iterable[HearingNotice]) -> tuple[Hearing, ...]:
+    """Resolve announcements in posting order into hearings.
+
+    A scheduled or rescheduled date matching a hearing already set restates it. A
+    reschedule to a new date moves the most recently set hearing still pending when
+    it is posted, and the reschedule becomes that hearing's notice; with none
+    pending it sets a new hearing. Time and place updates attach to the hearing
+    they precede, else to the latest hearing.
+    """
+    drafts: list[_Draft] = []
+    for n in notices:
+        if n.hearing_date is None:
+            pending = [
+                d
+                for d in drafts
+                if n.announced_on is None or d.hearing_date >= n.announced_on
+            ]
+            target = (pending or drafts or [None])[-1]
+            if target is not None:
+                target.notices.append(n)
+            continue
+        same = next((d for d in drafts if d.hearing_date == n.hearing_date), None)
+        if same is not None:
+            same.notices.append(n)
+            if same.notice is None and n.announced_on is not None:
+                same.notice = n
+            continue
+        pending = (
+            [d for d in drafts if d.hearing_date > n.announced_on]
+            if n.action_type == ActionType.HEARING_RESCHEDULED
+            and n.announced_on is not None
+            else []
+        )
+        if pending:
+            moved = pending[-1]
+            moved.hearing_date, moved.notice = n.hearing_date, n
+            moved.notices.append(n)
+            continue
+        drafts.append(
+            _Draft(n.hearing_date, n if n.announced_on is not None else None, [n])
+        )
+    return tuple(
+        sorted(
+            (Hearing(d.hearing_date, d.notice, tuple(d.notices)) for d in drafts),
+            key=lambda h: h.hearing_date,
+        )
+    )
+
+
+@dataclass(frozen=True)
 class Extension:
     """A recorded extension of a reporting deadline."""
 
@@ -83,27 +154,13 @@ class Tenure:
     discharged_on: date | None
     discharged_to: str | None
 
-    def hearing_dates(self) -> tuple[date, ...]:
-        """Distinct hearing dates after applying reschedules.
+    def hearings(self) -> tuple[Hearing, ...]:
+        """The tenure's hearings in date order."""
+        return _schedule(self.hearing_notices)
 
-        A reschedule announced before a pending hearing replaces that hearing's
-        date; otherwise it adds a new hearing date.
-        """
-        dates: list[date] = []
-        for notice in self.hearing_notices:
-            if notice.hearing_date is None:
-                continue
-            if notice.action_type == ActionType.HEARING_SCHEDULED:
-                if notice.hearing_date not in dates:
-                    dates.append(notice.hearing_date)
-            elif notice.action_type == ActionType.HEARING_RESCHEDULED:
-                announced = notice.announced_on or notice.hearing_date
-                pending = [d for d in dates if d > announced]
-                if pending:
-                    dates.remove(pending[-1])
-                if notice.hearing_date not in dates:
-                    dates.append(notice.hearing_date)
-        return tuple(sorted(dates))
+    def hearing_dates(self) -> tuple[date, ...]:
+        """Distinct hearing dates in order."""
+        return tuple(h.hearing_date for h in self.hearings())
 
 
 @dataclass(frozen=True)
@@ -220,6 +277,15 @@ def _open(
     return None
 
 
+def _open_on(builders: list[_TenureBuilder], on: date) -> _TenureBuilder | None:
+    """The latest tenure that was open on a date."""
+    for b in reversed(builders):
+        end = (b.report.reported_on if b.report else None) or b.discharged_on
+        if b.referred_on <= on and (end is None or on <= end):
+            return b
+    return None
+
+
 def _ordered_rows(obs: Observation) -> list[HistoryRow]:
     """Rows by date and table order; within a row, terminal actions first."""
     assert isinstance(obs.payload, BillHistoryPayload)
@@ -258,6 +324,13 @@ def _tenures(
 ) -> tuple[Tenure, ...]:
     builders: list[_TenureBuilder] = []
     current: str | None = None
+    # A history row can split into a dated hearing action and an undated time or
+    # place change; both follow the date when routing to a tenure.
+    held_on = {
+        r.row_index: r.hearing_date
+        for r in rows
+        if r.action_type in HEARING_ACTIONS and r.hearing_date is not None
+    }
     for r in rows:
         ref = EvidenceRef(observation_id=obs.observation_id, row_index=r.row_index)
         if r.action_type in REFERRAL_ACTIONS and r.committee_id:
@@ -274,6 +347,13 @@ def _tenures(
         elif (tenure := _open(builders, r.committee_id or current)) is None:
             continue
         elif r.action_type in HEARING_ACTIONS:
+            held = held_on.get(r.row_index)
+            if (
+                held is not None
+                and held < tenure.referred_on
+                and (tenure := _open_on(builders, held)) is None
+            ):
+                continue
             tenure.notices.append(
                 HearingNotice(r.action_date, r.action_type, r.hearing_date, ref)
             )

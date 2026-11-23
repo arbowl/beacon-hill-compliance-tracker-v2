@@ -1,8 +1,8 @@
-"""Hearing notice: JR 1D paras 4-5 (joint), Senate Rule 12 para 2 (Senate).
+"""Hearing notice: JR 1D para 4 (joint), SR 12 para 2 (Senate), HR 17A(e) (House).
 
-Initial and new-date notices need 10 days (joint) or 5 (Senate); agenda, time, and
-place changes to a joint hearing need 72 hours. Updates on or after the hearing
-date, after a prior announcement, are clerical and ignored. A hearing with no
+Each hearing is judged on the announcement that set its date: 10 days (joint), 5
+(Senate), or 72 hours (House). Restatements of the date, corrections posted on or
+after the hearing, and time or place updates are not judged. A hearing with no
 announcement is Unmet. Announcements before 2025-06-26 are exempt.
 """
 
@@ -20,7 +20,6 @@ from beacon.evaluator.rulesets.s194.notice import HearingNotice
 from tests.builders import ET, hearing, history, row
 
 JR1D_P4 = ClauseRef(RuleSource.JOINT, "1D", 4)
-JR1D_P5 = ClauseRef(RuleSource.JOINT, "1D", 5)
 SR12_P2 = ClauseRef(RuleSource.SENATE, "12", 2)
 HR17A_P15 = ClauseRef(RuleSource.HOUSE, "17A", 15)
 
@@ -77,57 +76,87 @@ class TestJointInitialNotice:
         assert "exempt" in result.detail
 
 
+def rescheduled(announced: str, on: str, committee: str = "J19") -> dict:
+    return row(announced, A.HEARING_RESCHEDULED, committee, hearing_date=on)
+
+
 class TestJointAmendments:
     def test_new_date_needs_ten_days(self):
         rows = [
             referred(),
             scheduled("2025-09-01", "2025-09-15"),
-            row(
-                "2025-09-10",
-                A.HEARING_RESCHEDULED,
-                "J19",
-                hearing_date="2025-09-17",
-            ),
+            rescheduled("2025-09-10", "2025-09-17"),
         ]
         result = one(rows)
         assert result.status == S.UNMET
+        assert result.detail.startswith("New hearing date posted 2025-09-10")
         assert cites(result, JR1D_P4)
 
-    def test_agenda_change_with_four_days_is_met(self):
+    def test_rescheduled_to_same_date_keeps_original_notice(self):
         rows = [
             referred(),
             scheduled("2025-09-01", "2025-09-15"),
-            row(
-                "2025-09-11",
-                A.HEARING_RESCHEDULED,
-                "J19",
-                hearing_date="2025-09-15",
-            ),
+            rescheduled("2025-09-13", "2025-09-15"),
         ]
-        assert one(rows).status == S.MET
+        result = one(rows)
+        assert result.status == S.MET
+        assert "posted 2025-09-01" in result.detail
+        assert any("Restatement" in s.description for s in result.derivation)
 
-    def test_agenda_change_within_72_hours_is_unmet(self):
+    def test_scheduled_again_for_same_date_keeps_original_notice(self):
         rows = [
             referred(),
-            scheduled("2025-09-01", "2025-09-15"),
-            row(
-                "2025-09-13",
-                A.HEARING_RESCHEDULED,
-                "J19",
-                hearing_date="2025-09-15",
-            ),
+            scheduled("2025-10-17", "2025-10-29"),
+            scheduled("2025-10-28", "2025-10-29"),
+            scheduled("2025-10-28", "2025-10-29"),
+            [
+                rescheduled("2025-10-29", "2025-10-29"),
+                row("2025-10-29", A.HEARING_TIME_CHANGED, "J19"),
+            ],
+        ]
+        result = one(rows)
+        assert result.status == S.MET
+        assert result.detail == (
+            "Notice given: Hearing notice posted 2025-10-17 for the 2025-10-29 "
+            "hearing: 12 days' notice, 10 days required"
+        )
+
+    def test_restatement_cannot_cure_a_late_notice(self):
+        rows = [
+            referred(),
+            scheduled("2025-09-10", "2025-09-15"),
+            scheduled("2025-09-12", "2025-09-15"),
         ]
         result = one(rows)
         assert result.status == S.UNMET
-        assert cites(result, JR1D_P5)
+        assert "posted 2025-09-10" in result.detail
 
-    def test_location_change_within_72_hours_is_unmet(self):
+    def test_moved_away_and_back_is_judged_from_the_move_back(self):
+        rows = [
+            referred(),
+            scheduled("2025-09-01", "2025-09-17"),
+            rescheduled("2025-09-05", "2025-09-22"),
+            rescheduled("2025-09-10", "2025-09-17"),
+        ]
+        result = one(rows)
+        assert result.status == S.UNMET
+        assert result.detail.startswith(
+            "New hearing date posted 2025-09-10 for the 2025-09-17 hearing: 7 days'"
+        )
+        assert any("superseded" in s.description for s in result.derivation)
+
+    def test_time_and_location_changes_are_not_judged(self):
         rows = [
             referred(),
             scheduled("2025-09-01", "2025-09-15"),
             row("2025-09-13", A.HEARING_LOCATION_CHANGED, "J19"),
+            row("2025-09-14", A.HEARING_TIME_CHANGED, "J19"),
         ]
-        assert one(rows).status == S.UNMET
+        result = one(rows)
+        assert result.status == S.MET
+        assert any(
+            s.description.startswith("Location change") for s in result.derivation
+        )
 
     def test_update_on_or_after_hearing_is_clerical(self):
         rows = [

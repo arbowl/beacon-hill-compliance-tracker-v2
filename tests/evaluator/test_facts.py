@@ -126,6 +126,77 @@ def test_reschedule_after_hearing_adds_date():
     assert tenure.hearing_dates() == (date(2025, 3, 4), date(2025, 5, 15))
 
 
+def test_hearing_keeps_the_notice_that_set_its_date():
+    obs = history(
+        "H1",
+        [
+            row("2025-02-01", A.REFERRED, "J19"),
+            row("2025-02-20", A.HEARING_SCHEDULED, "J19", hearing_date="2025-03-04"),
+            row("2025-03-01", A.HEARING_SCHEDULED, "J19", hearing_date="2025-03-04"),
+            row("2025-03-03", A.HEARING_RESCHEDULED, "J19", hearing_date="2025-03-04"),
+            row("2025-03-03", A.HEARING_TIME_CHANGED, "J19"),
+        ],
+    )
+    (h,) = project(BillKey(194, "H1"), [obs]).tenures_for("J19")[0].hearings()
+    assert h.hearing_date == date(2025, 3, 4)
+    assert h.notice is not None
+    assert h.notice.announced_on == date(2025, 2, 20)
+    assert len(h.notices) == 4
+
+
+def test_correction_to_earlier_committee_hearing_stays_with_that_tenure():
+    obs = history(
+        "H1",
+        [
+            row("2025-02-27", A.REFERRED, "J11"),
+            row("2025-04-23", A.HEARING_SCHEDULED, hearing_date="2025-04-29"),
+            [row("2025-07-31", A.REFERRED, "J24"), row("2025-07-31", A.REPORTED)],
+            [
+                row("2025-08-28", A.HEARING_RESCHEDULED, hearing_date="2025-04-29"),
+                row("2025-08-28", A.HEARING_TIME_CHANGED),
+            ],
+        ],
+    )
+    facts = project(BillKey(194, "H1"), [obs])
+    (j11,) = facts.tenures_for("J11")
+    (j24,) = facts.tenures_for("J24")
+    assert j24.hearing_notices == ()
+    (h,) = j11.hearings()
+    assert h.notice is not None
+    assert h.notice.announced_on == date(2025, 4, 23)
+    assert [n.announced_on for n in h.notices] == [
+        date(2025, 4, 23),
+        date(2025, 8, 28),
+        date(2025, 8, 28),
+    ]
+
+
+def test_hearing_before_any_referral_is_dropped():
+    obs = history(
+        "H1",
+        [
+            row("2025-03-01", A.REFERRED, "J24"),
+            row("2025-03-05", A.HEARING_SCHEDULED, hearing_date="2025-02-20"),
+        ],
+    )
+    (tenure,) = project(BillKey(194, "H1"), [obs]).tenures_for("J24")
+    assert tenure.hearing_notices == ()
+
+
+def test_reschedule_onto_another_pending_hearing_keeps_both():
+    obs = history(
+        "H1",
+        [
+            row("2025-02-01", A.REFERRED, "J19"),
+            row("2025-02-20", A.HEARING_SCHEDULED, "J19", hearing_date="2025-03-04"),
+            row("2025-02-21", A.HEARING_SCHEDULED, "J19", hearing_date="2025-03-11"),
+            row("2025-02-25", A.HEARING_RESCHEDULED, "J19", hearing_date="2025-03-04"),
+        ],
+    )
+    tenure = project(BillKey(194, "H1"), [obs]).tenures_for("J19")[0]
+    assert tenure.hearing_dates() == (date(2025, 3, 4), date(2025, 3, 11))
+
+
 def test_latest_capture_and_extractor_version_win():
     old_capture, new_capture = uuid4(), uuid4()
     early = datetime(2025, 3, 1, tzinfo=UTC)
