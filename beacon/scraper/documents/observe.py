@@ -1,10 +1,10 @@
 """Turns a bill page and the documents it leads to into document observations.
 
 Finders, in order: the bill page's tabs; report vote PDFs linked from the bill page;
-the Committee Vote tab of a new draft or study order the bill accompanied (except
-deadline study orders, which the chair reports without a vote); documents
-attached to the committee's hearings, sorted into summaries and vote records by
-title; and documents on the committee's Documents tab, sorted when collected. A
+the Committee Vote tab of a new draft or study order the bill accompanied, or of a
+bill that reported it in part (except deadline study orders, which the chair
+reports without a vote); documents attached to the committee's hearings, sorted
+into summaries and vote records by title; and documents on the committee's Documents tab, sorted when collected. A
 search is exhaustive when every finder ran and none of its fetches failed.
 """
 
@@ -50,6 +50,10 @@ _DEADLINE_STUDY = re.compile(
     r"under\s+(?:House\s+Rule\s+27|Joint\s+Rule\s+10|JR\s?10)\b", re.I
 )
 _SUMMARY_WORDING = re.compile(r"summar", re.I)
+# Rows naming the bill the committee reported this one through: "Accompanied H4100",
+# and partial reports such as "Reported, in part, by H4000" or "Reported on the
+# residue, see H4200". The vehicle's tabs carry the committee's vote and summary.
+_VEHICLE_ACTIONS = (ActionType.ACCOMPANIED, ActionType.REPORTED)
 
 
 def hearing_document_kind(doc: HearingDocument) -> DocumentKind:
@@ -123,21 +127,18 @@ def plan(
     """Which tabs and documents to fetch for this bill."""
     tabs = bill_tabs.tab_candidates(bill_body, bill_url)
     vote_tab = tabs[DocumentKind.VOTES].url if DocumentKind.VOTES in tabs else None
+    vehicles = [
+        r
+        for r in history.rows
+        if r.action_type in _VEHICLE_ACTIONS and r.committee_id in (None, committee_id)
+    ]
     accompanying = [
         bill
-        for r in history.rows
-        if r.action_type == ActionType.ACCOMPANIED
-        and r.committee_id in (None, committee_id)
-        and not _DEADLINE_STUDY.search(r.raw_text)
+        for r in vehicles
+        if not _DEADLINE_STUDY.search(r.raw_text)
         for bill in r.related_bills
     ]
-    summary_sources = [
-        bill
-        for r in history.rows
-        if r.action_type == ActionType.ACCOMPANIED
-        and r.committee_id in (None, committee_id)
-        for bill in r.related_bills
-    ]
+    summary_sources = [bill for r in vehicles for bill in r.related_bills]
     return DocumentPlan(
         vote_tab=vote_tab,
         accompanying_summary_tabs=tuple(

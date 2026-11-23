@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.0] - 2026-11-23
 
 ### Changed
 
@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A committee vote posted on the bill that reported another in part, as with
+  "Reported, in part, by H4000" or "Reported on a part of H4931", now counts for the
+  bill reported. Previously only the bill's own Committee Vote tab and bills it
+  accompanied were searched, so these bills were judged to have no posted vote.
 - A bill recommitted to a committee that had already reported on it is now tracked as a
   new referral to that committee. Previously the recommittal was not recognized, so the
   committee's second report went unchecked.

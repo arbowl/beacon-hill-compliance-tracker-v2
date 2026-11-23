@@ -44,11 +44,17 @@ def fetched(url: str, fixture: str) -> Fetched:
 
 
 def run(
-    bill_id: str, sources: dict[str, str], hearing_docs=(), committee_docs=()
+    bill_id: str,
+    sources: dict[str, str],
+    hearing_docs=(),
+    committee_docs=(),
+    committee_id: str = "J19",
 ) -> dict:
     url = f"{BASE}/Bills/194/{bill_id}"
     body = (PAGES / f"{bill_id}.html").read_bytes()
-    document_plan = plan(body, url, BASE, 194, parse_history(body, bill_id), "J19")
+    document_plan = plan(
+        body, url, BASE, 194, parse_history(body, bill_id), committee_id
+    )
     available = {u: fetched(u, f) for u, f in sources.items()}
     observations = observe(
         capture(url),
@@ -59,7 +65,7 @@ def run(
         committee_docs,
         194,
         bill_id,
-        "J19",
+        committee_id,
     )
     by_kind: dict = {}
     for o in observations:
@@ -81,6 +87,18 @@ def test_vote_on_accompanying_study_order():
     assert search.exhaustive
     assert [c.finder_id for c in search.candidates] == ["accompanying_vote_tab"]
     assert votes["document"].vote_date == date(2026, 1, 23)
+
+
+def test_vote_on_bill_that_reported_this_one_in_part():
+    """H1 history: "Reported, in part, by H4000"; the vote is on H4000's tab."""
+    tab = f"{BASE}/Bills/194/H4000/CommitteeVote"
+    result = run("H1", {tab: "H4000_CommitteeVote.html"}, committee_id="H34")
+    assert tab in result["plan"].accompanying_tabs
+    votes = result["by_kind"][DocumentKind.VOTES]
+    assert [c.finder_id for c in votes["document_search"].candidates] == [
+        "accompanying_vote_tab"
+    ]
+    assert votes["document"].vote_date == date(2025, 4, 16)
 
 
 def test_missing_fetch_makes_search_non_exhaustive():
