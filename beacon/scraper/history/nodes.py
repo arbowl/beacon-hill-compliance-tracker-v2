@@ -25,6 +25,10 @@ from beacon.scraper.history.fields import (
     extract_time_range,
 )
 
+# "Reported date extended to ..." is a clerk's variant of "Reporting date
+# extended", not a report.
+REPORTED_NOT_EXTENSION = r"Reported(?!\s+date\s+extended)"
+
 
 @dataclass
 class ActionNode:
@@ -198,11 +202,14 @@ def create_action_nodes() -> list[ActionNode]:
                     r"ought\s+not\s+to\s+pass\s+\(under\s+Joint\s+Rule\s+\d+\)", re.I
                 ),
                 re.compile(
-                    r"Reported(?:\s+favorably|\s+adversely)?(?:,\s+rules\s+suspended)?",
+                    REPORTED_NOT_EXTENSION
+                    + r"(?:\s+favorably|\s+adversely)?(?:,\s+rules\s+suspended)?",
                     re.I,
                 ),
                 re.compile(
-                    r"Reported(?:,\s+referred\s+to\s+the\s+committee\s+on\s+(?P<committee>.+))?",
+                    REPORTED_NOT_EXTENSION
+                    + r"(?:,\s+referred\s+to\s+the\s+committee\s+on\s+"
+                    r"(?P<committee>.+))?",
                     re.I,
                 ),
                 re.compile(
@@ -390,7 +397,7 @@ def create_action_nodes() -> list[ActionNode]:
             category="deadline-extension",
             patterns=[
                 re.compile(
-                    r"Reporting\s+date\s+extended\s+to\s+"
+                    r"Report(?:ing|ed)\s+date\s+extended\s+(?:to|until)\s+"
                     r"(?P<date>[A-Za-z]+,?\s+[A-Za-z]+\s+\d{1,2},\s+\d{4})"
                     r"(?:\s+\(sections?\s+(?P<sections>.+?)\))?",
                     re.I,

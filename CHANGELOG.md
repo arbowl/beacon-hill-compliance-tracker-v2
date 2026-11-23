@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A bill history entry that lists extra procedural steps before the final referral, such
   as "rules suspended, question divided (on motion of ...), and referred (on motion of ...)
   to the committee on ...", is now read as a referral to that last committee.
+- A bill history entry reading "Reported date extended to ..." is now read as a
+  reporting deadline extension. Previously it was read as the committee reporting
+  the bill, so the extension date was taken as the report date. Affected bills may
+  move from "Non-Compliant" to "Provisional" or "Compliant".
+- A bill history entry reading "Reporting date extended until ..." is now read as a
+  reporting deadline extension. Previously it was not recognized, and the bill was
+  judged against its original deadline.
 
 ## [2.0.0] - 2026-11-19
 

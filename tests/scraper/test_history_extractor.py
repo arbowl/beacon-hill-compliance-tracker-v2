@@ -77,6 +77,29 @@ def test_classify_unknown_and_compound():
     assert A.STUDY_ORDER in kinds and A.ACCOMPANIED in kinds
 
 
+@pytest.mark.parametrize(
+    ("text", "deadline"),
+    [
+        ("Reporting date extended to Friday, March 6, 2026", "2026-03-06"),
+        ("Reporting date extended until Friday, November 7, 2025", "2025-11-07"),
+        ("Reported date extended to Wednesday, March 18, 2026", "2026-03-18"),
+        (
+            "Reported date extended to Wednesday, March 18, 2026 "
+            "(sections 45 to 72, inclusive, 85 and 86)",
+            "2026-03-18",
+        ),
+    ],
+)
+def test_extension_wordings_are_extensions_not_reports(text: str, deadline: str):
+    assert [(t, d["new_deadline"]) for t, d in classify(text)] == [
+        (A.REPORTING_EXTENDED, deadline)
+    ]
+
+
+def test_bare_reported_is_still_a_report():
+    assert A.REPORTED in [t for t, _ in classify("Reported favorably")]
+
+
 def test_title_and_rows():
     payload = parse_history(page("H67"))
     assert payload.title is not None
