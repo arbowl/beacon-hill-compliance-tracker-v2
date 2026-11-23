@@ -37,6 +37,7 @@ from beacon.domain.observations import (
 )
 from beacon.evaluator.clauses import ClauseIndex
 from beacon.evaluator.engine import evaluate as evaluate_facts
+from beacon.evaluator.engine import no_requirements
 from beacon.evaluator.facts import project
 from beacon.evaluator.rulesets.base import Ruleset
 from beacon.evaluator.rulesets.s194.ruleset import RULESET as S194
@@ -444,8 +445,30 @@ def collect(ctx: Context, committee_id: str) -> UUID:
     return _run(ctx, Stage.COLLECT, work, scope=key.committee_id)
 
 
+@dataclass(frozen=True)
+class _ObservationPool:
+    """Hearing, hearing-list, and Documents tab observations loaded once, for
+    passes that build an index per bill (reextract), instead of per call."""
+
+    hearing_lists: tuple[Observation, ...]
+    hearings: tuple[Observation, ...]
+    committee_documents: tuple[Observation, ...]
+
+    @staticmethod
+    def load(ctx: Context) -> "_ObservationPool":
+        of_kind = ctx.store.observations.of_kind
+        return _ObservationPool(
+            tuple(of_kind(ObservationKind.HEARING_LIST)),
+            tuple(of_kind(ObservationKind.HEARING)),
+            tuple(of_kind(ObservationKind.COMMITTEE_DOCUMENTS)),
+        )
+
+
 def _hearing_index(
-    ctx: Context, committee_id: str, as_of: datetime | None = None
+    ctx: Context,
+    committee_id: str,
+    as_of: datetime | None = None,
+    pool: _ObservationPool | None = None,
 ) -> dict[str, list[HearingDocument]] | None:
     """Hearing documents per bill, from each hearing's latest observation.
 
@@ -453,12 +476,22 @@ def _hearing_index(
     been observed by as_of. A hearings tab listing no hearings gives an empty
     index: the committee is known to have none.
     """
+    lists = (
+        pool.hearing_lists
+        if pool
+        else ctx.store.observations.of_kind(ObservationKind.HEARING_LIST)
+    )
     listed = any(
         o.committee_id == committee_id and (as_of is None or o.observed_at <= as_of)
-        for o in ctx.store.observations.of_kind(ObservationKind.HEARING_LIST)
+        for o in lists
     )
     latest: dict[str, Observation] = {}
-    for o in ctx.store.observations.of_kind(ObservationKind.HEARING):
+    pages = (
+        pool.hearings
+        if pool
+        else ctx.store.observations.of_kind(ObservationKind.HEARING)
+    )
+    for o in pages:
         if o.committee_id != committee_id or not isinstance(o.payload, HearingPayload):
             continue
         if as_of is not None and o.observed_at > as_of:
@@ -478,14 +511,22 @@ def _hearing_index(
 
 
 def _committee_document_index(
-    ctx: Context, committee_id: str, as_of: datetime | None = None
+    ctx: Context,
+    committee_id: str,
+    as_of: datetime | None = None,
+    pool: _ObservationPool | None = None,
 ) -> dict[str, list[CommitteeDocument]] | None:
     """Documents tab entries per bill, from the latest observation by as_of.
 
     None when the committee's Documents tab had not been observed by as_of.
     """
     latest: Observation | None = None
-    for o in ctx.store.observations.of_kind(ObservationKind.COMMITTEE_DOCUMENTS):
+    tabs = (
+        pool.committee_documents
+        if pool
+        else ctx.store.observations.of_kind(ObservationKind.COMMITTEE_DOCUMENTS)
+    )
+    for o in tabs:
         if o.committee_id != committee_id:
             continue
         if as_of is not None and o.observed_at > as_of:
@@ -722,7 +763,11 @@ def _stale_document_sources(ctx: Context) -> dict[tuple[UUID, str], tuple[UUID, 
 
 
 def _reextract_documents(
-    ctx: Context, capture_id: UUID, committee_id: str, consulted: tuple[UUID, ...]
+    ctx: Context,
+    capture_id: UUID,
+    committee_id: str,
+    consulted: tuple[UUID, ...],
+    pool: _ObservationPool | None = None,
 ) -> bool:
     """Re-derive one bill capture's document observations; False if current."""
     search_id = documents.search_extractor_id(DocumentKind.VOTES, committee_id)
@@ -762,8 +807,8 @@ def _reextract_documents(
             body,
             document_plan,
             fetched,
-            _for_bill(_hearing_index(ctx, committee_id, as_of=at), bill_id),
-            _for_bill(_committee_document_index(ctx, committee_id, as_of=at), bill_id),
+            _for_bill(_hearing_index(ctx, committee_id, at, pool), bill_id),
+            _for_bill(_committee_document_index(ctx, committee_id, at, pool), bill_id),
             session,
             bill_id,
             committee_id,
@@ -880,13 +925,24 @@ def reextract(ctx: Context) -> UUID:
 
     def work(tracker: Tracker) -> dict[str, int]:
         added = skipped = documents_added = hearings_added = tabs_added = 0
+        orphaned = 0
+        # An observation whose capture (or a capture it consulted) is no longer
+        # stored cannot be rebuilt; it is left as it is and counted.
         for old in stale_hearings:
-            if _reextract_hearing(ctx, old):
-                hearings_added += 1
+            try:
+                hearings_added += _reextract_hearing(ctx, old)
+            except KeyError:
+                orphaned += 1
+                tracker.step(str(old.capture_id), "orphaned")
+                continue
             tracker.step(str(old.capture_id), "hearings")
         for old in stale_tabs:
-            if _reextract_committee_documents(ctx, old):
-                tabs_added += 1
+            try:
+                tabs_added += _reextract_committee_documents(ctx, old)
+            except KeyError:
+                orphaned += 1
+                tracker.step(str(old.capture_id), "orphaned")
+                continue
             tracker.step(str(old.capture_id), "committee_documents")
         for capture in captures:
             match = _BILL_URL.search(capture.url)
@@ -903,13 +959,24 @@ def reextract(ctx: Context) -> UUID:
             ctx.store.observations.append_many([obs])
             added += 1
             tracker.step(match.group(2), "added")
+        # Loaded after the hearing and Documents tab passes, which rewrite them.
+        pool = _ObservationPool.load(ctx) if stale else None
         for (capture_id, committee_id), consulted in stale.items():
-            if _reextract_documents(ctx, capture_id, committee_id, consulted):
+            try:
+                rebuilt = _reextract_documents(
+                    ctx, capture_id, committee_id, consulted, pool
+                )
+            except KeyError:
+                orphaned += 1
+                tracker.step(str(capture_id), "orphaned")
+                continue
+            if rebuilt:
                 documents_added += 1
                 tracker.step(str(capture_id), "documents_added")
             else:
                 tracker.step(str(capture_id), "skipped")
         return {
+            "orphaned": orphaned,
             "added": added,
             "skipped": skipped,
             "documents_added": documents_added,
@@ -956,10 +1023,19 @@ def evaluate(ctx: Context, committee_id: str, as_of: datetime | None = None) -> 
             evaluations = evaluate_facts(
                 facts, committee_id, ruleset, ctx.clauses, moment, tracker.run_id
             )
+            owed_nothing = no_requirements(
+                facts, committee_id, ruleset, moment, tracker.run_id
+            )
             ctx.store.evaluations.append_many(evaluations)
+            ctx.store.evaluations.append_no_requirements(owed_nothing)
             labels.update(e.label.value for e in evaluations)
-            outcome = evaluations[-1].label.value if evaluations else "committee_output"
-            if not evaluations:
+            labels.update(n.reason.value for n in owed_nothing)
+            if evaluations:
+                outcome = evaluations[-1].label.value
+            elif owed_nothing:
+                outcome = owed_nothing[-1].reason.value
+            else:
+                outcome = "committee_output"
                 labels["committee_output"] += 1
             tracker.step(bill.bill_id, outcome)
         return dict(labels) | {"bills": len(bills)}
@@ -968,10 +1044,10 @@ def evaluate(ctx: Context, committee_id: str, as_of: datetime | None = None) -> 
 
 
 def _committee_output(
-    ctx: Context, bills: list[BillRecord], evaluations: list[TenureEvaluation]
+    ctx: Context, bills: list[BillRecord], tracked: set[str]
 ) -> list[CommitteeOutput]:
-    """Inventoried documents without evaluations that the committee produced."""
-    evaluated = {e.bill.bill_id for e in evaluations}
+    """Inventoried documents with no tenure reported that the committee produced."""
+    evaluated = tracked
     output = []
     for bill in bills:
         if bill.bill_id in evaluated:
@@ -1032,13 +1108,19 @@ def report(ctx: Context, committee_id: str, reporters: list[Reporter]) -> list[P
         raise StageError(f"No successful evaluation for {committee_id}")
     committee = ctx.store.inventory.committee(s.session, committee_id)
     evaluations = ctx.store.evaluations.for_run(run_id)
+    owed_nothing = ctx.store.evaluations.no_requirements_for_run(run_id)
+    owed_nothing = [n for n in owed_nothing if n.committee_id == committee_id]
+    tracked = {e.bill.bill_id for e in evaluations} | {
+        n.bill.bill_id for n in owed_nothing
+    }
     payload = ReportInput(
         session=s.session,
         committee_id=committee_id,
         committee_name=committee.name if committee else None,
         evaluations=evaluations,
         bills=bills,
-        committee_output=_committee_output(ctx, bills, evaluations),
+        committee_output=_committee_output(ctx, bills, tracked),
+        no_requirements=owed_nothing,
         evidence=_evidence(ctx, evaluations),
         committee_url=committee.url if committee else None,
     )

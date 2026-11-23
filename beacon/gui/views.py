@@ -7,7 +7,7 @@ from typing import Any
 
 from beacon.adapters.sqlite_store import SqliteStore
 from beacon.config import Settings
-from beacon.domain.evaluation import TenureEvaluation
+from beacon.domain.evaluation import NoRequirements, TenureEvaluation
 from beacon.domain.ids import BillKey
 from beacon.domain.observations import ObservationKind
 from beacon.domain.provenance import ClauseRef
@@ -90,23 +90,39 @@ def control(
 
 
 def overview(store: SqliteStore, settings: Settings) -> list[dict[str, Any]]:
-    """Each checked committee with its latest label counts."""
+    """Each checked committee with its latest label counts. Referrals that owed
+    nothing are counted apart, by reason, and never in summary."""
     cards = []
     for committee in store.inventory.committees(settings.session):
-        evaluations = _latest_evaluations(store, settings, committee.committee_id)
-        if not evaluations:
+        evaluations, owed_nothing = _latest_run(store, settings, committee.committee_id)
+        if not evaluations and not owed_nothing:
             continue
+        first = evaluations[0] if evaluations else owed_nothing[0]
         cards.append(
             {
                 "committee_id": committee.committee_id,
                 "name": committee.name,
-                "as_of": evaluations[0].as_of.isoformat(),
+                "as_of": first.as_of.isoformat(),
                 "summary": dict(Counter(e.label.value for e in evaluations)),
+                "no_requirements": _reasons(owed_nothing),
                 "bills": len(evaluations),
                 "audit_url": _latest_audit(settings, committee.committee_id),
             }
         )
     return cards
+
+
+def _reasons(owed_nothing: list[NoRequirements]) -> dict[str, int]:
+    return dict(Counter(n.reason.value for n in owed_nothing))
+
+
+def _owed_nothing_view(item: NoRequirements) -> dict[str, Any]:
+    return {
+        "tenure_id": item.tenure_id,
+        "referred_on": item.referred_on.isoformat(),
+        "reason": item.reason.value,
+        "awaiting": list(item.awaiting),
+    }
 
 
 def _latest_audit(settings: Settings, committee_id: str) -> str | None:
@@ -117,20 +133,29 @@ def _latest_audit(settings: Settings, committee_id: str) -> str | None:
     return f"/reports/{reports[-1].parent.name}/{reports[-1].name}"
 
 
-def _latest_evaluations(
+def _latest_run(
     store: SqliteStore, settings: Settings, committee_id: str
-) -> list[TenureEvaluation]:
+) -> tuple[list[TenureEvaluation], list[NoRequirements]]:
+    """The latest run's evaluations, and its tenures that owed nothing."""
     run_id = store.evaluations.latest_run(
         settings.session, committee_id, settings.ruleset
     )
-    return store.evaluations.for_run(run_id) if run_id else []
+    if run_id is None:
+        return [], []
+    owed_nothing = [
+        n
+        for n in store.evaluations.no_requirements_for_run(run_id)
+        if n.committee_id == committee_id
+    ]
+    return store.evaluations.for_run(run_id), owed_nothing
 
 
 def committee_results(
     store: SqliteStore, settings: Settings, committee_id: str
 ) -> dict[str, Any]:
-    """One row per evaluated bill, with each requirement's status."""
-    evaluations = _latest_evaluations(store, settings, committee_id)
+    """One row per evaluated bill, with each requirement's status, then one per
+    referral that owed nothing (label None, never in summary)."""
+    evaluations, owed_nothing = _latest_run(store, settings, committee_id)
     bills = {
         b.bill_id: b for b in store.inventory.bills_for(settings.session, committee_id)
     }
@@ -156,14 +181,27 @@ def committee_results(
             },
         }
         for e in evaluations
+    ] + [
+        {
+            "bill_id": n.bill.bill_id,
+            "title": bills[n.bill.bill_id].title if n.bill.bill_id in bills else None,
+            "url": bills[n.bill.bill_id].url if n.bill.bill_id in bills else None,
+            "tenure_id": n.tenure_id,
+            "label": None,
+            "requirements": {},
+            "no_requirements": _owed_nothing_view(n),
+        }
+        for n in owed_nothing
     ]
+    first = evaluations[0] if evaluations else next(iter(owed_nothing), None)
     return {
         "committee_id": committee_id,
         "committee_name": committee.name if committee else committee_id,
         "requirement_totals": {k: dict(v) for k, v in totals.items()},
-        "as_of": evaluations[0].as_of.isoformat() if evaluations else None,
-        "evaluation_run": str(evaluations[0].run_id) if evaluations else None,
+        "as_of": first.as_of.isoformat() if first else None,
+        "evaluation_run": str(first.run_id) if first else None,
         "summary": dict(Counter(e.label.value for e in evaluations)),
+        "no_requirements": _reasons(owed_nothing),
         "bills": rows,
     }
 
@@ -191,11 +229,8 @@ def bill_detail(
         if o.committee_id == committee_id
     ]
     facts = project(bill, observations, hearings)
-    evaluations = [
-        e
-        for e in _latest_evaluations(store, settings, committee_id)
-        if e.bill.bill_id == bill.bill_id
-    ]
+    latest, owed_nothing = _latest_run(store, settings, committee_id)
+    evaluations = [e for e in latest if e.bill.bill_id == bill.bill_id]
     tenures = [
         {
             "tenure_id": t.tenure_id,
@@ -287,6 +322,9 @@ def bill_detail(
             for d in facts.documents
         ],
         "evaluations": evaluation_views,
+        "no_requirements": [
+            _owed_nothing_view(n) for n in owed_nothing if n.bill.bill_id == bill_id
+        ],
         "observations": [
             {
                 "observation_id": str(o.observation_id),

@@ -1,7 +1,7 @@
 """The browser runner, driven through the same runner and store as the CLI."""
 
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,7 +11,9 @@ from starlette.testclient import TestClient
 
 from beacon.adapters.run_lock import RunLock
 from beacon.adapters.site_push import PushError
+from beacon.adapters.sqlite_store import SqliteStore
 from beacon.config import Settings
+from beacon.domain.evaluation import NoRequirements
 from beacon.domain.events import (
     CommitteeStarted,
     PlanStarted,
@@ -19,10 +21,12 @@ from beacon.domain.events import (
     RunFinished,
     RunStarted,
 )
+from beacon.domain.ids import BillKey
 from beacon.gui.app import build_app
 from beacon.gui.jobs import JobProgress
 from beacon.orchestrator.runner import PushOutcome, RunRequest
 from beacon.ports.events import EventSink
+from beacon.ports.store import RunStatus, Stage
 
 LOCAL = "http://127.0.0.1:8765"
 
@@ -119,6 +123,40 @@ def test_results_and_bill_detail(populated: Settings):
     body = client.get(f"/api/captures/{obs['capture_id']}/body")
     assert body.status_code == 200
     assert body.headers["content-security-policy"] == "sandbox"
+
+
+def test_referrals_owing_nothing_are_shown_apart(populated: Settings):
+    store = SqliteStore(populated.db_path)
+    run_id = store.runs.start(Stage.EVALUATE, "0", "cfg")
+    store.evaluations.append_no_requirements(
+        [
+            NoRequirements(
+                run_id=run_id,
+                bill=BillKey(194, "S1168"),
+                committee_id="J19",
+                tenure_id="194/S1168:J19:2025-09-01",
+                referred_on=date(2025, 9, 1),
+                ruleset_id="s194",
+                ruleset_version="9",
+                as_of=datetime(2026, 11, 20, tzinfo=UTC),
+                awaiting=("votes_posted",),
+            )
+        ]
+    )
+    store.runs.finish(run_id, RunStatus.SUCCEEDED, {})
+    store.close()
+    client = _client(build_app(populated, FakeRunner()))
+    (card,) = client.get("/api/overview").json()
+    assert card["summary"] == {} and card["no_requirements"] == {"none_yet": 1}
+    results = client.get("/api/committees/J19/results").json()
+    assert results["summary"] == {} and results["no_requirements"] == {"none_yet": 1}
+    (row,) = results["bills"]
+    assert row["label"] is None and row["no_requirements"]["awaiting"] == [
+        "votes_posted"
+    ]
+    detail = client.get("/api/bills/S1168", params={"committee": "J19"}).json()
+    assert detail["evaluations"] == []
+    assert [n["reason"] for n in detail["no_requirements"]] == ["none_yet"]
 
 
 def test_options_list_every_current_committee(populated: Settings):

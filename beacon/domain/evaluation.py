@@ -111,6 +111,44 @@ class TenureEvaluation(BaseModel):
     input_fingerprint: str
 
 
+class NoRequirementsReason(StrEnum):
+    """Why a tenure has no requirement to judge."""
+
+    NONE_APPLY = "none_apply"
+    """No tracked requirement arose, and none will from the committee's ordinary
+    course of action (a requirement triggered only by a hearing still could)."""
+    NONE_YET = "none_yet"
+    """No tracked requirement has arisen yet; one will when the committee acts."""
+
+
+class NoRequirements(BaseModel):
+    """A tenure that owed nothing as of one moment: no label, no rate.
+
+    Kept apart from TenureEvaluation so nothing that counts labels can count it.
+    awaiting names the requirements that will arise; it is empty if and only if
+    the reason is NONE_APPLY.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    run_id: UUID
+    bill: BillKey
+    committee_id: str
+    tenure_id: str
+    referred_on: date
+    ruleset_id: str
+    ruleset_version: str
+    as_of: AwareDatetime
+    awaiting: tuple[str, ...] = ()
+
+    @property
+    def reason(self) -> NoRequirementsReason:
+        """NONE_YET while any requirement is awaited."""
+        if self.awaiting:
+            return NoRequirementsReason.NONE_YET
+        return NoRequirementsReason.NONE_APPLY
+
+
 def default_roll_up(results: Sequence[RequirementResult]) -> ComplianceLabel:
     """Any unmet -> Non-Compliant; all met -> Compliant; otherwise Provisional."""
     statuses = {r.status for r in results}

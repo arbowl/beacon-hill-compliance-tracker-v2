@@ -9,7 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from beacon.domain.captures import Capture
-from beacon.domain.evaluation import TenureEvaluation
+from beacon.domain.evaluation import NoRequirements, TenureEvaluation
 from beacon.domain.inventory import BillRecord, CommitteeRecord
 from beacon.domain.observations import Observation, ObservationKind
 
@@ -118,6 +118,10 @@ class EvaluationRepo(Protocol):
     def append_many(self, evaluations: Sequence[TenureEvaluation]) -> None: ...
 
     def for_run(self, run_id: UUID) -> list[TenureEvaluation]: ...
+
+    def append_no_requirements(self, items: Sequence[NoRequirements]) -> None: ...
+
+    def no_requirements_for_run(self, run_id: UUID) -> list[NoRequirements]: ...
 
     def latest_run(
         self, session: int, committee_id: str, ruleset_id: str

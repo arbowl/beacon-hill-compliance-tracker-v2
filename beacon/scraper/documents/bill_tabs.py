@@ -5,13 +5,14 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import Tag
 
 from beacon.domain.observations import DocumentCandidate, DocumentKind, VoteRecord
 from beacon.scraper.history.committees import normalize_committee_name
+from beacon.scraper.html import parse_html
 
 FINDER_ID = "bill_tabs"
-FINDER_VERSION = 10
+FINDER_VERSION = 11
 _TABS = {
     "CommitteeSummary": (DocumentKind.SUMMARY, "Committee Summary tab"),
     "PrimarySponsorSummary": (DocumentKind.SUMMARY, "Primary Sponsor Summary tab"),
@@ -39,7 +40,7 @@ class CommitteeVote:
 
 def tab_candidates(body: bytes, bill_url: str) -> dict[DocumentKind, DocumentCandidate]:
     """Summary and vote tabs present on the bill page, keyed by document kind."""
-    soup = BeautifulSoup(body, "html.parser")
+    soup = parse_html(body)
     base = bill_url.rstrip("/") + "/"
     found: dict[DocumentKind, DocumentCandidate] = {}
     for tab_tag in soup.select('[role="tab"][data-href], a[href]'):
@@ -71,7 +72,7 @@ def _date(text: str) -> date | None:
 
 def parse_vote_tab(body: bytes) -> list[CommitteeVote]:
     """Every committee vote panel on a Committee Vote tab."""
-    soup = BeautifulSoup(body, "html.parser")
+    soup = parse_html(body)
     votes = []
     for panel in soup.select("div.committeeVote"):
         heading = panel.select_one(".panel-heading")
@@ -113,7 +114,7 @@ _REPORT_HREF = re.compile(r"/Reports/\d+/", re.I)
 
 def report_vote_links(body: bytes, base_url: str) -> list[tuple[str, str]]:
     """(url, link text) of report documents on the bill page that look like votes."""
-    soup = BeautifulSoup(body, "html.parser")
+    soup = parse_html(body)
     links = []
     for link in soup.find_all("a", href=True):
         href = link["href"]
@@ -136,7 +137,7 @@ def summary_documents_for(body: bytes, bill_id: str, base_url: str) -> list[str]
     A document belongs to the bill when its id appears in the link, its text, or
     its table row.
     """
-    soup = BeautifulSoup(body, "html.parser")
+    soup = parse_html(body)
     pattern = re.compile(rf"\b{bill_id[0]}\.?\s?{bill_id[1:]}\b", re.I)
     found = []
     for link in soup.find_all("a", href=True):

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.1.0] - 2026-11-23
 
+### Added
+
+- Referrals that owe nothing under the tracked rules are now reported as "No
+  applicable requirements", with why: no tracked rule applies (as with the committees
+  on Bills in the Third Reading), or nothing is owed until the committee reports (as
+  with an open House referral, which owes a posted vote once reported). They have no
+  label and count toward no total; site bundles carry them in a new
+  `no_requirements` section, and the browser runner lists them under their own
+  filter. Previously these referrals were left out silently.
+
 ### Changed
 
 - Reporting extensions on Senate bills in joint committees now count when the Senate
@@ -19,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A committee whose referrals all owed nothing now still gets a report and a site
+  bundle. Previously its last published results were never replaced.
 - A bill ordered to a third reading is now tracked as referred to that chamber's
   committee on Bills in the Third Reading (House Rule 22, Senate Rule 33), until it is
   read third or the committee's report is accepted. Previously only an explicit

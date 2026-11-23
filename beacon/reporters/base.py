@@ -2,12 +2,13 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
+from uuid import UUID
 
-from beacon.domain.evaluation import TenureEvaluation
+from beacon.domain.evaluation import NoRequirements, TenureEvaluation
 from beacon.domain.evidence import EvidenceRef
 from beacon.domain.inventory import BillRecord
 
@@ -55,6 +56,32 @@ class ReportInput:
     committee_output: Sequence[CommitteeOutput] = ()
     evidence: Mapping[EvidenceRef, EvidenceItem] = field(default_factory=dict)
     committee_url: str | None = None
+    no_requirements: Sequence[NoRequirements] = ()
+
+
+@dataclass(frozen=True)
+class RunIdentity:
+    """The evaluation run a report covers."""
+
+    run_id: UUID
+    ruleset_id: str
+    ruleset_version: str
+    as_of: datetime
+
+
+def run_identity(report: ReportInput) -> RunIdentity | None:
+    """The one run behind a report's evaluations and tenures owing nothing; None
+    if it has neither. Raises ValueError if they span runs."""
+    runs = {
+        RunIdentity(e.run_id, e.ruleset_id, e.ruleset_version, e.as_of)
+        for e in report.evaluations
+    } | {
+        RunIdentity(n.run_id, n.ruleset_id, n.ruleset_version, n.as_of)
+        for n in report.no_requirements
+    }
+    if len(runs) > 1:
+        raise ValueError(f"{report.committee_id}: report spans {len(runs)} runs")
+    return next(iter(runs), None)
 
 
 class Reporter(Protocol):

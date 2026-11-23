@@ -10,7 +10,7 @@ from beacon.domain.evidence import EvidenceRef
 from beacon.domain.ids import CommitteeKey
 from beacon.domain.provenance import ClauseRef
 from beacon.evaluator.clauses import ClauseIndex
-from beacon.reporters.base import EvidenceItem, ReportInput
+from beacon.reporters.base import EvidenceItem, ReportInput, run_identity
 
 BUNDLE_SUFFIX = ".bundle.json.gz"
 
@@ -100,21 +100,25 @@ def _clauses(
 def build_bundle(report: ReportInput, index: ClauseIndex) -> v1.CommitteeBundle:
     """The committee's evaluations as one validated bundle."""
     evaluations = list(report.evaluations)
-    runs = {(e.run_id, e.ruleset_id, e.ruleset_version, e.as_of) for e in evaluations}
-    if len(runs) != 1:
-        raise BundleError(f"{report.committee_id}: evaluations span {len(runs)} runs")
+    try:
+        run = run_identity(report)
+    except ValueError as exc:
+        raise BundleError(str(exc)) from exc
+    if run is None:
+        raise BundleError(f"{report.committee_id}: nothing evaluated")
     if report.committee_name is None or report.committee_url is None:
         raise BundleError(f"{report.committee_id}: committee not in inventory")
-    ((run_id, ruleset_id, ruleset_version, as_of),) = runs
     evidence = dict(report.evidence)
-    evaluated = {e.bill.bill_id for e in evaluations}
+    evaluated = {e.bill.bill_id for e in evaluations} | {
+        n.bill.bill_id for n in report.no_requirements
+    }
     return v1.CommitteeBundle(
         schema_version=v1.SCHEMA_VERSION,
         session=report.session,
-        evaluation_run_id=run_id,
-        ruleset_id=ruleset_id,
-        ruleset_version=ruleset_version,
-        as_of=as_of,
+        evaluation_run_id=run.run_id,
+        ruleset_id=run.ruleset_id,
+        ruleset_version=run.ruleset_version,
+        as_of=run.as_of,
         committee=v1.Committee(
             committee_id=report.committee_id,
             name=report.committee_name,
@@ -137,6 +141,17 @@ def build_bundle(report: ReportInput, index: ClauseIndex) -> v1.CommitteeBundle:
             )
             for o in report.committee_output
         ),
+        no_requirements=tuple(
+            v1.NoRequirements(
+                tenure_id=n.tenure_id,
+                bill_id=n.bill.bill_id,
+                committee_id=n.committee_id,
+                referred_on=n.referred_on,
+                reason=v1.NoRequirementsReason(n.reason.value),
+                awaiting=tuple(v1.RequirementId(a) for a in n.awaiting),
+            )
+            for n in report.no_requirements
+        ),
     )
 
 
@@ -147,7 +162,7 @@ class SiteBundleReporter:
         self._clauses = clauses
 
     def write(self, report: ReportInput, out_dir: Path) -> list[Path]:
-        if not report.evaluations:
+        if run_identity(report) is None:
             return []
         bundle = build_bundle(report, self._clauses)
         path = (

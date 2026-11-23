@@ -36,6 +36,12 @@ class Requirement(Protocol):
         self, obligation: Obligation, facts: BillFacts, tenure: Tenure, as_of: datetime
     ) -> RequirementResult: ...
 
+    def awaits(self, facts: BillFacts, tenure: Tenure) -> bool:
+        """Whether a tenure owing nothing yet will owe this once its committee
+        acts in the ordinary course (reports). Optional actions, like holding a
+        hearing, do not count."""
+        ...
+
 
 @dataclass(frozen=True)
 class Ruleset:

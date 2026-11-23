@@ -370,6 +370,25 @@ def test_reextract_refreshes_document_observations(ctx: Context, monkeypatch):
     assert len(again) == len(observations)
 
 
+def test_reextract_skips_observations_whose_capture_is_gone(ctx: Context, monkeypatch):
+    stages.collect(ctx, "J19")
+    stages.scrape(ctx, "J19")
+    (search, *_) = [
+        o
+        for o in ctx.store.observations.of_kind(ObservationKind.DOCUMENT_SEARCH)
+        if o.extractor_id.startswith("document_search:votes")
+    ]
+    with ctx.store._db.conn:
+        ctx.store._db.conn.execute(
+            "DELETE FROM captures WHERE capture_id = ?", (str(search.capture_id),)
+        )
+    monkeypatch.setattr(bill_tabs, "FINDER_VERSION", bill_tabs.FINDER_VERSION + 1)
+    run_id = stages.reextract(replace(ctx, fetcher=OfflineFetcher()))
+    assert ctx.store.runs.status(run_id) == RunStatus.SUCCEEDED
+    (run,) = [r for r in ctx.store.runs.recent() if r.run_id == run_id]
+    assert run.stats["orphaned"] == 1
+
+
 def test_reextract_rebuilds_hearings_offline(ctx: Context, monkeypatch):
     stages.collect(ctx, "J19")
     current = hearings.EXTRACTOR_VERSION

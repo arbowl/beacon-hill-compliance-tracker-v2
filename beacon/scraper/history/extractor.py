@@ -19,6 +19,7 @@ from beacon.scraper.history.committees import (
     normalize_committee_name,
 )
 from beacon.scraper.history.nodes import ACTION_NODES
+from beacon.scraper.html import parse_html
 
 EXTRACTOR_ID = "bill_history"
 EXTRACTOR_VERSION = 8
@@ -94,7 +95,7 @@ def _committee_id(
 
 def parse_history(body: bytes, bill_id: str | None = None) -> BillHistoryPayload:
     """Classify each dated row of the bill page's history table."""
-    soup = BeautifulSoup(body, "html.parser")
+    soup = parse_html(body)
     rows: list[HistoryRow] = []
     index = 0
     for tr in soup.find_all("tr"):

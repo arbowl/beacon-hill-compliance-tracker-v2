@@ -45,6 +45,10 @@ class ReportOutDeadline:
     requirement_id: str = S194Requirement.REPORT_OUT_DEADLINE.value
     clauses: tuple[ClauseRef, ...] = (JR10_P1, JR10_P2, HR27_P2, HR27_P3, JR30)
 
+    def awaits(self, facts: BillFacts, tenure: Tenure) -> bool:
+        """Every Joint tenure owes a report from referral; nothing waits."""
+        return False
+
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
         """One obligation per joint committee tenure."""
         if Chamber.from_prefix(tenure.committee_id[0]) != Chamber.JOINT:

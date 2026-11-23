@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from beacon.domain.captures import Capture
-from beacon.domain.evaluation import TenureEvaluation
+from beacon.domain.evaluation import NoRequirements, TenureEvaluation
 from beacon.domain.inventory import BillRecord, CommitteeRecord
 from beacon.domain.observations import Observation, ObservationKind
 from beacon.ports.store import RunRecord, RunStatus, Stage
@@ -89,6 +89,18 @@ CREATE TABLE IF NOT EXISTS evaluations (
 CREATE INDEX IF NOT EXISTS evaluations_run ON evaluations (run_id);
 CREATE INDEX IF NOT EXISTS evaluations_committee
     ON evaluations (session, committee_id, ruleset_id, as_of);
+CREATE TABLE IF NOT EXISTS no_requirements (
+    run_id TEXT NOT NULL,
+    session INTEGER NOT NULL,
+    bill_id TEXT NOT NULL,
+    committee_id TEXT NOT NULL,
+    tenure_id TEXT NOT NULL,
+    ruleset_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    PRIMARY KEY (run_id, tenure_id)
+);
+CREATE INDEX IF NOT EXISTS no_requirements_committee
+    ON no_requirements (session, committee_id, ruleset_id);
 CREATE TABLE IF NOT EXISTS requirement_results (
     evaluation_id TEXT NOT NULL,
     obligation_id TEXT NOT NULL,
@@ -458,12 +470,44 @@ class SqliteEvaluations:
             ).fetchall()
         return [TenureEvaluation.model_validate_json(r[0]) for r in rows]
 
+    def append_no_requirements(self, items: Sequence[NoRequirements]) -> None:
+        rows = [
+            (
+                str(n.run_id),
+                n.bill.session,
+                n.bill.bill_id,
+                n.committee_id,
+                n.tenure_id,
+                n.ruleset_id,
+                n.model_dump_json(),
+            )
+            for n in items
+        ]
+        with self._db.lock, self._db.conn:
+            self._db.conn.executemany(
+                "INSERT INTO no_requirements VALUES (?, ?, ?, ?, ?, ?, ?)", rows
+            )
+
+    def no_requirements_for_run(self, run_id: UUID) -> list[NoRequirements]:
+        with self._db.lock:
+            rows = self._db.conn.execute(
+                "SELECT payload_json FROM no_requirements WHERE run_id = ? "
+                "ORDER BY bill_id, tenure_id",
+                (str(run_id),),
+            ).fetchall()
+        return [NoRequirements.model_validate_json(r[0]) for r in rows]
+
     def latest_run(
         self, session: int, committee_id: str, ruleset_id: str
     ) -> UUID | None:
+        """The newest succeeded run that judged, or found nothing owed by, a tenure."""
         with self._db.lock:
             row = self._db.conn.execute(
-                "SELECT e.run_id FROM evaluations e JOIN runs r ON r.run_id = e.run_id "
+                "SELECT e.run_id FROM ("
+                " SELECT run_id, session, committee_id, ruleset_id FROM evaluations"
+                " UNION ALL"
+                " SELECT run_id, session, committee_id, ruleset_id FROM no_requirements"
+                ") e JOIN runs r ON r.run_id = e.run_id "
                 "WHERE e.session = ? AND e.committee_id = ? AND e.ruleset_id = ? "
                 "AND r.status = ? ORDER BY r.started_at DESC LIMIT 1",
                 (session, committee_id, ruleset_id, RunStatus.SUCCEEDED.value),

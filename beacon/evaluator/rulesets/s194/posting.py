@@ -171,6 +171,16 @@ class VotesPosted:
         reported = report is not None and not _AUTOMATIC_STUDY.search(report.raw_text)
         return [_obligation(self.requirement_id, tenure)] if voted or reported else []
 
+    def awaits(self, facts: BillFacts, tenure: Tenure) -> bool:
+        """An open tenure before a committee whose votes are recorded owes a vote
+        record once the committee reports."""
+        return (
+            tenure.report is None
+            and tenure.discharged_on is None
+            and _chamber(tenure) in _VOTE_CLAUSE
+            and tenure.committee_id != BILLS_IN_THE_THIRD_READING
+        )
+
     def check(
         self, obligation: Obligation, facts: BillFacts, tenure: Tenure, as_of: datetime
     ) -> RequirementResult:
@@ -208,6 +218,10 @@ class SummaryPosted:
 
     requirement_id: str = S194Requirement.SUMMARY_POSTED.value
     clauses: tuple[ClauseRef, ...] = (JR1B_P4,)
+
+    def awaits(self, facts: BillFacts, tenure: Tenure) -> bool:
+        """Owed only for a hearing, which a committee need not hold."""
+        return False
 
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
         """Owed for every bill a joint committee schedules for hearing."""

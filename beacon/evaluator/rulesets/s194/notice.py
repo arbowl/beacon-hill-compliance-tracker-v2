@@ -136,6 +136,10 @@ class HearingNotice:
     requirement_id: str = S194Requirement.HEARING_NOTICE.value
     clauses: tuple[ClauseRef, ...] = (JR1D_P4, SR12_P2, HR17A_P15, HR7B_P1)
 
+    def awaits(self, facts: BillFacts, tenure: Tenure) -> bool:
+        """Owed only for a hearing, which a committee need not hold."""
+        return False
+
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
         """One obligation per committee tenure with a hearing.
 

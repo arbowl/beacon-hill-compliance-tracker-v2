@@ -13,6 +13,8 @@ from beacon.domain.evaluation import (
     ClauseCitation,
     ComplianceLabel,
     DerivationStep,
+    NoRequirements,
+    NoRequirementsReason,
     ProvisionalReason,
     RequirementResult,
     RequirementStatus,
@@ -21,7 +23,7 @@ from beacon.domain.evaluation import (
 from beacon.domain.evidence import EvidenceRef
 from beacon.domain.inventory import BillRecord
 from beacon.evaluator.clauses import ClauseIndex
-from beacon.reporters.base import EvidenceItem, ReportInput
+from beacon.reporters.base import EvidenceItem, ReportInput, run_identity
 
 REQUIREMENT_NAMES = {
     "report_out_deadline": "Reported out by the deadline",
@@ -40,6 +42,10 @@ REASON_TEXT = {
     ProvisionalReason.MISSING_DATA: "information is missing",
     ProvisionalReason.AMBIGUOUS_TIMING: "the timing cannot be confirmed",
     ProvisionalReason.AWAITING_REVIEW: "a document is awaiting review",
+}
+NO_REQUIREMENTS_TEXT = {
+    NoRequirementsReason.NONE_APPLY: "No tracked rule applies to this referral.",
+    NoRequirementsReason.NONE_YET: "Nothing is owed yet.",
 }
 _STATIC = files("beacon.reporters.static")
 _LABEL_ORDER = {
@@ -199,6 +205,19 @@ class AuditReporter:
             f"{escape(evaluation.input_fingerprint[:12])}</div></article>"
         )
 
+    def _owed_nothing(self, item: NoRequirements, bill: BillRecord | None) -> str:
+        title = bill.title if bill else None
+        bill_id = item.bill.bill_id
+        text = NO_REQUIREMENTS_TEXT[item.reason]
+        if item.awaiting:
+            names = ", ".join(REQUIREMENT_NAMES.get(a, a) for a in item.awaiting)
+            text += f" Owed once the committee acts: {names}."
+        return (
+            f"<li><strong>{escape(_bill_label(bill_id))}</strong>: "
+            f"{escape(title or '')}. Referred {escape(_long(item.referred_on))}. "
+            f"{escape(text)}</li>"
+        )
+
     def _rule_table(self, evaluations: list[TenureEvaluation]) -> str:
         totals: dict[str, Counter[RequirementStatus]] = {}
         for e in evaluations:
@@ -217,7 +236,8 @@ class AuditReporter:
         )
 
     def write(self, report: ReportInput, out_dir: Path) -> list[Path]:
-        if not report.evaluations:
+        run = run_identity(report)
+        if run is None:
             return []
         evaluations = sorted(
             report.evaluations,
@@ -227,7 +247,6 @@ class AuditReporter:
                 int(e.bill.bill_id[1:]),
             ),
         )
-        first = evaluations[0]
         bills = {b.bill_id: b for b in report.bills}
         counts = Counter(e.label for e in evaluations)
         count_html = "".join(
@@ -244,6 +263,21 @@ class AuditReporter:
             self._bill(e, bills.get(e.bill.bill_id), report.evidence)
             for e in evaluations
         )
+        owed_nothing = sorted(
+            report.no_requirements,
+            key=lambda n: (n.bill.bill_id[0], int(n.bill.bill_id[1:]), n.tenure_id),
+        )
+        quiet = (
+            '<h2>No applicable requirements</h2><p class="meta">These referrals '
+            "owed nothing under the tracked rules as of this run. They carry no "
+            'status and count toward no total.</p><ul class="quiet">'
+            + "".join(
+                self._owed_nothing(n, bills.get(n.bill.bill_id)) for n in owed_nothing
+            )
+            + "</ul>"
+            if owed_nothing
+            else ""
+        )
         css = _STATIC.joinpath("audit.css").read_text(encoding="utf-8")
         script = _STATIC.joinpath("audit.js").read_text(encoding="utf-8")
         html = (
@@ -252,9 +286,9 @@ class AuditReporter:
             f"<title>Audit report: {name}</title><style>{css}</style></head><body>"
             f'<div class="wrap"><header><div class="kicker">Compliance audit</div>'
             f'<h1>{name}</h1><div class="meta">Session {report.session}. As of '
-            f"{escape(_long(first.as_of.date()))}. Ruleset {escape(first.ruleset_id)} "
-            f"version {escape(first.ruleset_version)}. Evaluation run "
-            f"{escape(str(first.run_id))}.</div></header>"
+            f"{escape(_long(run.as_of.date()))}. Ruleset {escape(run.ruleset_id)} "
+            f"version {escape(run.ruleset_version)}. Evaluation run "
+            f"{escape(str(run.run_id))}.</div></header>"
             f'<div class="counts">{count_html}</div><h2>Rule by rule</h2>'
             f"{self._rule_table(evaluations)}<h2>Every bill</h2>"
             '<div class="controls"><input id="q" type="search" '
@@ -263,11 +297,12 @@ class AuditReporter:
             "<option>Non-Compliant</option><option>Provisional</option>"
             "<option>Compliant</option></select>"
             '<span id="shown" class="meta"></span></div>'
-            f"{body}<footer>Each verdict cites the rule text it was judged against. "
+            f"{body}{quiet}<footer>Each verdict cites the rule text it was judged "
+            "against. "
             "Bills the committee produced itself (new drafts, study orders) are not "
             f"judged.</footer></div><script>{script}</script></body></html>"
         )
-        stamp = first.as_of.date().isoformat()
+        stamp = run.as_of.date().isoformat()
         path = out_dir / stamp / f"{report.committee_id}_audit.html"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(html, encoding="utf-8")

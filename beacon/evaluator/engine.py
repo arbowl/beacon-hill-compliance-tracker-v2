@@ -8,6 +8,7 @@ from uuid import UUID, uuid5
 from beacon.domain.evaluation import (
     ClauseCitation,
     ComplianceLabel,
+    NoRequirements,
     ProvisionalReason,
     RequirementResult,
     RequirementStatus,
@@ -127,3 +128,36 @@ def evaluate(
             )
         )
     return evaluations
+
+
+def no_requirements(
+    facts: BillFacts,
+    committee_id: str,
+    ruleset: Ruleset,
+    as_of: datetime,
+    run_id: UUID,
+) -> list[NoRequirements]:
+    """The tenures before one committee that evaluate() passes over: no
+    requirement arose. Each names the requirements still awaited, if any."""
+    found = []
+    for tenure in facts.tenures_for(committee_id):
+        if any(r.obligations(facts, tenure) for r in ruleset.requirements):
+            continue
+        found.append(
+            NoRequirements(
+                run_id=run_id,
+                bill=facts.bill,
+                committee_id=committee_id,
+                tenure_id=tenure.tenure_id,
+                referred_on=tenure.referred_on,
+                ruleset_id=ruleset.ruleset_id,
+                ruleset_version=ruleset.version,
+                as_of=as_of,
+                awaiting=tuple(
+                    r.requirement_id
+                    for r in ruleset.requirements
+                    if r.awaits(facts, tenure)
+                ),
+            )
+        )
+    return found

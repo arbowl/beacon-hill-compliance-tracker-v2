@@ -74,7 +74,7 @@
   .committee .links { margin-top: 8px; display: flex; gap: 16px; font-size: 15px; }
   a, .linkish { color: var(--link); }
   .linkish { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-  .yes { color: var(--yes); } .no { color: var(--no); } .wait { color: var(--wait); }
+  .yes { color: var(--yes); } .no { color: var(--no); } .wait { color: var(--wait); } .quiet { color: var(--faint); }
   .back { margin: 28px 0 0; }
   .explore-head .stats { display: flex; gap: 32px; flex-wrap: wrap; margin: 14px 0; }
   .explore-head .n { font: 700 34px/1 var(--serif); }
@@ -186,6 +186,7 @@
         <button data-filter="Non-Compliant" aria-pressed="false">Missed a rule</button>
         <button data-filter="Compliant" aria-pressed="false">Followed every rule</button>
         <button data-filter="Provisional" aria-pressed="false">Not yet known</button>
+        <button data-filter="none" aria-pressed="false">No applicable requirements</button>
       </div>
       <table><thead><tr><th scope="col">Bill</th><th scope="col">Title</th><th scope="col">Result</th><th scope="col">Why</th></tr></thead><tbody id="bills"></tbody></table>
       <p><button class="linkish" id="more" hidden>Show more</button></p>
@@ -217,6 +218,12 @@ const ANSWER = {Met: ["Yes", "yes"], Unmet: ["No", "no"], Provisional: ["Not yet
 const LABEL = {"Compliant": ["Followed every rule", "yes"], "Non-Compliant": ["Missed a rule", "no"], "Provisional": ["Not yet known", "wait"]};
 const REASON = {not_yet_due: "The deadline has not passed yet.", missing_data: "Some information is missing.",
                 ambiguous_timing: "The timing cannot be confirmed.", awaiting_review: "Waiting for a person to confirm a document."};
+const QUIET = ["No applicable requirements", "quiet"];
+const OWED = {none_apply: "None of the tracked rules applies to this referral.",
+              none_yet: "Nothing is owed yet."};
+const owedText = (n) => OWED[n.reason] + (n.awaiting.length
+  ? ` ${n.awaiting.map((a) => (RULES[a] || [a])[0]).join(", ")} will be due once the committee reports.` : "");
+const owedCount = (counts) => Object.values(counts || {}).reduce((a, b) => a + b, 0);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const EASTERN = new Intl.DateTimeFormat("en-US", {timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit"});
 const eastern = (iso) => EASTERN.format(new Date(iso));
@@ -446,6 +453,7 @@ async function loadOverview() {
     return `<div class="committee"><div class="name">${esc(c.name)}</div>
       <div class="split" role="img" aria-label="${yes} followed every rule, ${no} missed a rule, ${wait} not yet known"><span class="s-yes" style="width:${pct(yes)}%"></span><span class="s-no" style="width:${pct(no)}%"></span><span class="s-wait" style="width:${pct(wait)}%"></span></div>
       <div class="hint"><span class="yes">${yes} followed every rule</span> - <span class="no">${no} missed a rule</span>${wait ? ` - <span class="wait">${wait} not yet known</span>` : ""}. Checked ${esc(ago(c.as_of))}.</div>
+      ${owedCount(c.no_requirements) ? `<div class="hint quiet">${owedCount(c.no_requirements)} more owe nothing under the tracked rules; not counted above.</div>` : ""}
       <div class="links"><a href="#/committee/${esc(c.committee_id)}">Explore bills</a>${c.audit_url ? `<a href="${esc(c.audit_url)}" target="_blank" rel="noopener">Audit report</a>` : ""}</div></div>`;
   }).join("") || '<span class="hint">No committee has been checked yet.</span>';
 }
@@ -475,11 +483,12 @@ async function openCommittee(id) {
   const s = results.summary, card = overview.find((c) => c.committee_id === id);
   $("explore-head").innerHTML = `<h1>${esc(results.committee_name)}</h1>
     <p class="lede">${results.as_of ? `Checked ${esc(longDate(results.as_of))}.` : "Not checked yet."}${card && card.audit_url ? ` <a href="${esc(card.audit_url)}" target="_blank" rel="noopener">Open the full audit report</a>` : ""}</p>
-    <div class="stats"><div><div class="n no">${s["Non-Compliant"] || 0}</div>Missed a rule</div><div><div class="n yes">${s.Compliant || 0}</div>Followed every rule</div><div><div class="n wait">${s.Provisional || 0}</div>Not yet known</div></div>`;
+    <div class="stats"><div><div class="n no">${s["Non-Compliant"] || 0}</div>Missed a rule</div><div><div class="n yes">${s.Compliant || 0}</div>Followed every rule</div><div><div class="n wait">${s.Provisional || 0}</div>Not yet known</div>${owedCount(results.no_requirements) ? `<div><div class="n quiet">${owedCount(results.no_requirements)}</div>No applicable requirements</div>` : ""}</div>`;
   renderBills();
 }
 
 function why(b) {
+  if (b.no_requirements) return owedText(b.no_requirements);
   const misses = Object.entries(b.requirements).filter(([, r]) => r.status === "Unmet");
   if (misses.length) return misses.map(([k]) => `Not ${(RULES[k] || [k, k])[1]}`).join("; ");
   const open = Object.values(b.requirements).find((r) => r.status === "Provisional");
@@ -489,9 +498,9 @@ function why(b) {
 function renderBills() {
   if (!results) return;
   const term = $("search").value.trim().toLowerCase().replace(/\./g, "");
-  const rows = results.bills.filter((b) => (filter === "all" || b.label === filter) &&
+  const rows = results.bills.filter((b) => (filter === "all" || (filter === "none" ? !b.label : b.label === filter)) &&
     (!term || b.bill_id.toLowerCase().includes(term) || (b.title || "").toLowerCase().includes(term)));
-  $("bills").innerHTML = rows.slice(0, shown).map((b) => { const [label, cls] = LABEL[b.label] || [b.label, ""];
+  $("bills").innerHTML = rows.slice(0, shown).map((b) => { const [label, cls] = b.label ? (LABEL[b.label] || [b.label, ""]) : QUIET;
     return `<tr><td><button class="linkish" data-bill="${esc(b.bill_id)}">${esc(billLabel(b.bill_id))}</button></td><td>${esc(b.title)}</td><td class="${cls}"><strong>${esc(label)}</strong></td><td>${esc(why(b))}</td></tr>`; }).join("")
     || '<tr><td colspan="4" class="hint">No bills match.</td></tr>';
   $("more").hidden = rows.length <= shown;
@@ -506,11 +515,13 @@ async function openBill(billId) {
     const wait = r.status === "Provisional" ? ` ${REASON[r.reason] || ""}${r.resolves_on ? ` Settles after ${longDate(r.resolves_on)}.` : ""}` : "";
     return `<div class="item"><strong>${esc((RULES[r.requirement_id] || [r.requirement_id])[0])}:</strong> <strong class="${cls}">${answer}</strong>
       <div>${esc(plain(r.detail))}.${esc(wait)}</div>${rule ? `<details><summary>Read the rule</summary><blockquote>${esc(rule.clause_text)}</blockquote></details>` : ""}</div>`; }).join("");
-  const [label, cls] = e ? (LABEL[e.label] || [e.label, ""]) : ["Not checked", ""];
+  const owed = bill.no_requirements || [];
+  const [label, cls] = e ? (LABEL[e.label] || [e.label, ""]) : owed.length ? QUIET : ["Not checked", ""];
+  const quiet = owed.map((n) => `<div class="item"><strong class="quiet">${esc(QUIET[0])}</strong> (referred ${esc(longDate(n.referred_on))})<div>${esc(owedText(n))} This referral has no result and is not counted.</div></div>`).join("");
   $("story").innerHTML = `<article class="story" tabindex="-1" id="story-article"><h2>${esc(billLabel(bill.bill_id))}: ${esc(bill.title || "")}</h2>
     <p><strong class="${cls}">${esc(label)}</strong>${bill.url ? ` - <a href="${esc(bill.url)}" target="_blank" rel="noopener">View on malegislature.gov</a>` : ""}</p>
     ${bill.origin ? `<p class="hint">Produced by the committee from ${esc(bill.origin.source_bills.map(billLabel).join(", "))}; not judged on its own.</p>` : ""}
-    ${items || '<p class="hint">This bill has not been checked.</p>'}</article>`;
+    ${items}${quiet}${items || quiet ? "" : '<p class="hint">This bill has not been checked.</p>'}</article>`;
   $("story-article").focus(); $("story-article").scrollIntoView({behavior: "smooth", block: "start"});
 }
 

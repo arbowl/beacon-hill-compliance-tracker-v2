@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 
 from beacon.domain.evaluation import TenureEvaluation
-from beacon.reporters.base import ReportInput
+from beacon.reporters.base import ReportInput, run_identity
 
 
 def _tenure(evaluation: TenureEvaluation) -> dict:
@@ -21,9 +21,9 @@ class JsonReporter:
     """Writes one JSON document per committee per run."""
 
     def write(self, report: ReportInput, out_dir: Path) -> list[Path]:
-        if not report.evaluations:
+        run = run_identity(report)
+        if run is None:
             return []
-        first = report.evaluations[0]
         by_bill: dict[str, list[TenureEvaluation]] = {}
         for e in report.evaluations:
             by_bill.setdefault(e.bill.bill_id, []).append(e)
@@ -32,9 +32,9 @@ class JsonReporter:
             "session": report.session,
             "committee_id": report.committee_id,
             "committee_name": report.committee_name,
-            "ruleset": {"id": first.ruleset_id, "version": first.ruleset_version},
-            "as_of": first.as_of.isoformat(),
-            "evaluation_run": str(first.run_id),
+            "ruleset": {"id": run.ruleset_id, "version": run.ruleset_version},
+            "as_of": run.as_of.isoformat(),
+            "evaluation_run": str(run.run_id),
             "summary": dict(Counter(e.label.value for e in report.evaluations)),
             "bills": [
                 {
@@ -54,8 +54,18 @@ class JsonReporter:
                 }
                 for o in report.committee_output
             ],
+            "no_requirements": [
+                {
+                    "tenure_id": n.tenure_id,
+                    "bill_id": n.bill.bill_id,
+                    "referred_on": n.referred_on.isoformat(),
+                    "reason": n.reason.value,
+                    "awaiting": list(n.awaiting),
+                }
+                for n in report.no_requirements
+            ],
         }
-        stamp = first.as_of.date().isoformat()
+        stamp = run.as_of.date().isoformat()
         path = out_dir / stamp / f"{report.committee_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(document, indent=2), encoding="utf-8")

@@ -53,7 +53,8 @@ class CommitteeAlias:
         """
         if not text:
             return False
-        cleaned = text.strip().lower()
+        # Extracted document text breaks lines mid-name ("Regional \nGovernment").
+        cleaned = " ".join(text.split()).lower()
         for variant in self.short_names:
             if variant.lower() == cleaned:
                 return True

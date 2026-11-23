@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from beacon.scraper.history.committees import normalize_committee_name
+from beacon.scraper.history.committees import get_committee, normalize_committee_name
 from beacon.scraper.history.extractor import parse_history
 
 
@@ -24,3 +24,11 @@ def test_history_rows_use_their_own_date():
     )
     rows = parse_history(body, "H1").rows
     assert [r.committee_id for r in rows] == ["J38", "J45"]
+
+
+def test_name_split_across_lines_still_matches():
+    text = (
+        "Senators Votes \u2013 Municipalities and Regional \nGovernment \n"
+        "Bill Number: S23"
+    )
+    assert get_committee("J10").matches(text)
