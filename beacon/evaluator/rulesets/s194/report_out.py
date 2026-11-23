@@ -1,4 +1,4 @@
-"""Joint committee report-out deadlines (Joint Rule 10, House Rule 27)."""
+"""Joint committee report-out deadlines (Joint Rules 10 and 30, House Rule 27)."""
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -23,6 +23,7 @@ JR10_P1 = ClauseRef(RuleSource.JOINT, "10", 1)
 JR10_P2 = ClauseRef(RuleSource.JOINT, "10", 2)
 HR27_P2 = ClauseRef(RuleSource.HOUSE, "27", 2)
 HR27_P3 = ClauseRef(RuleSource.HOUSE, "27", 3)
+JR30 = ClauseRef(RuleSource.JOINT, "30", 1)
 HEALTH_CARE_FINANCING = "J24"
 REPORT_WINDOW = timedelta(days=60)
 CHAIR_EXTENSION_LIMIT = timedelta(days=90)
@@ -42,7 +43,7 @@ class ReportOutDeadline:
 
     calendar: SessionCalendar = field(default_factory=lambda: SessionCalendar(194))
     requirement_id: str = S194Requirement.REPORT_OUT_DEADLINE.value
-    clauses: tuple[ClauseRef, ...] = (JR10_P1, JR10_P2, HR27_P2, HR27_P3)
+    clauses: tuple[ClauseRef, ...] = (JR10_P1, JR10_P2, HR27_P2, HR27_P3, JR30)
 
     def obligations(self, facts: BillFacts, tenure: Tenure) -> list[Obligation]:
         """One obligation per joint committee tenure."""
@@ -63,7 +64,7 @@ class ReportOutDeadline:
         """Compare the tenure's report or discharge against its deadline."""
         today = local_date(as_of)
         if facts.bill.filed_in != Chamber.HOUSE:
-            deadline = self._senate_deadline(tenure)
+            deadline = self._senate_deadline(tenure, facts.bill.filed_in)
         elif (late_hcf := self._late_hcf_deadline(facts, tenure)) is not None:
             deadline = late_hcf
         else:
@@ -221,7 +222,7 @@ class ReportOutDeadline:
             )
         return _Deadline(due, tuple(steps), tuple(evidence))
 
-    def _senate_deadline(self, tenure: Tenure) -> _Deadline:
+    def _senate_deadline(self, tenure: Tenure, filed_in: Chamber) -> _Deadline:
         cal = self.calendar
         referred = tenure.referred_on
         steps = [
@@ -260,19 +261,39 @@ class ReportOutDeadline:
                 role=StepRole.BASE_DUE,
             )
         )
-        steps.extend(
-            DerivationStep(
-                description=(
-                    f"Extension recorded {e.granted_on} not recognized: Joint Rule 10 "
-                    "makes no provision for extensions"
-                ),
-                value=e.until,
-                role=StepRole.EXTENSION_IGNORED,
-                clause=JR10_P2,
+        evidence = [tenure.referral]
+        for e in sorted(
+            tenure.extensions, key=lambda e: (e.granted_on, e.evidence.row_index)
+        ):
+            if e.until is None:
+                why = "no new date given"
+            elif e.branch.value != filed_in.value:
+                why = f"not ordered by the {filed_in.value}, the branch of origination"
+            elif e.granted_on > due:
+                why = f"granted after the {due} deadline had passed"
+            else:
+                due = max(due, e.until)
+                steps.append(
+                    DerivationStep(
+                        description=f"Extended on {e.granted_on} to {e.until}",
+                        value=e.until,
+                        role=StepRole.EXTENSION,
+                        clause=JR30,
+                    )
+                )
+                evidence.append(e.evidence)
+                continue
+            steps.append(
+                DerivationStep(
+                    description=(
+                        f"Extension recorded {e.granted_on} not recognized: {why}"
+                    ),
+                    value=e.until,
+                    role=StepRole.EXTENSION_IGNORED,
+                    clause=JR30,
+                )
             )
-            for e in tenure.extensions
-        )
-        return _Deadline(due, tuple(steps), (tenure.referral,))
+        return _Deadline(due, tuple(steps), tuple(evidence))
 
     def _outcome(
         self, obligation: Obligation, tenure: Tenure, deadline: _Deadline, today: date

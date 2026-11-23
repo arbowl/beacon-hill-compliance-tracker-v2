@@ -143,6 +143,10 @@ def create_action_nodes() -> list[ActionNode]:
                     r"referred.*?to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
+                re.compile(
+                    r"Recommitted\s+to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    re.I,
+                ),
             ],
             extractors={
                 "committee_name": extract_committee_name,

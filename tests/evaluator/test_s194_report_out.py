@@ -1,7 +1,8 @@
 """Report-out deadline cases for session 194, one per clause behavior.
 
 House-filed matters before joint committees: House Rule 27 para 2.
-Senate-filed matters: Joint Rule 10 para 2 (the Senate rules set no branch deadline).
+Senate-filed matters: Joint Rule 10 para 2 (the Senate rules set no branch deadline),
+extended under Joint Rule 30 by Senate order made before the deadline passes.
 """
 
 from datetime import date, datetime
@@ -13,6 +14,7 @@ from beacon.domain.evaluation import ProvisionalReason, RequirementResult, StepR
 from beacon.domain.evaluation import RequirementStatus as S
 from beacon.domain.ids import BillKey
 from beacon.domain.observations import ActionType as A
+from beacon.domain.observations import Branch
 from beacon.domain.provenance import ClauseRef, RuleSource
 from beacon.evaluator.facts import project
 from beacon.evaluator.rulesets.s194.report_out import ReportOutDeadline
@@ -21,6 +23,7 @@ from tests.builders import history, row
 ET = ZoneInfo("America/New_York")
 HR27_P2 = ClauseRef(RuleSource.HOUSE, "27", 2)
 JR10_P2 = ClauseRef(RuleSource.JOINT, "10", 2)
+JR30 = ClauseRef(RuleSource.JOINT, "30", 1)
 
 
 def check(
@@ -40,6 +43,16 @@ def heard(on: str, referred: str = "2025-02-01", committee: str = "J19") -> list
         row(referred, A.REFERRED, committee),
         row(referred, A.HEARING_SCHEDULED, committee, hearing_date=on),
     ]
+
+
+def senate_extension(granted: str, until: str) -> dict:
+    return row(
+        granted,
+        A.REPORTING_EXTENDED,
+        "J19",
+        branch=Branch.SENATE,
+        new_deadline=until,
+    )
 
 
 def cites(result: RequirementResult, ref: ClauseRef) -> bool:
@@ -225,16 +238,52 @@ class TestJointRule10:
         result = check("S1", [row("2025-02-27", A.REFERRED, "J19")], "2025-12-04")
         assert result.status == S.UNMET
 
-    def test_extensions_not_recognized(self):
+    def test_senate_extension_before_deadline_is_honored(self):
         rows = [
             row("2025-02-27", A.REFERRED, "J19"),
-            row("2025-11-20", A.REPORTING_EXTENDED, "J19", new_deadline="2026-01-15"),
+            senate_extension("2025-11-20", "2026-01-15"),
             row("2026-01-10", A.REPORTED, "J19"),
         ]
         result = check("S1", rows, "2026-02-01")
+        assert result.status == S.MET
+        assert result.due == date(2026, 1, 15)
+        assert cites(result, JR30)
+
+    def test_extension_granted_after_deadline_is_ignored(self):
+        rows = [
+            row("2025-02-27", A.REFERRED, "J19"),
+            senate_extension("2026-04-01", "2026-06-25"),
+            row("2026-06-18", A.STUDY_ORDER, "J19"),
+        ]
+        result = check("S1", rows, "2026-07-01")
         assert result.status == S.UNMET
         assert result.due == date(2025, 12, 3)
-        assert any("not recognized" in s.description for s in result.derivation)
+        assert any("deadline had passed" in s.description for s in result.derivation)
+
+    def test_extension_granted_on_deadline_is_honored(self):
+        rows = [
+            row("2025-02-27", A.REFERRED, "J19"),
+            senate_extension("2025-12-03", "2026-02-04"),
+        ]
+        assert check("S1", rows, "2026-01-01").due == date(2026, 2, 4)
+
+    def test_chained_extensions_each_judged_against_running_deadline(self):
+        rows = [
+            row("2025-02-27", A.REFERRED, "J19"),
+            senate_extension("2025-11-20", "2026-01-15"),
+            senate_extension("2026-01-10", "2026-03-15"),
+            senate_extension("2026-04-01", "2026-06-25"),
+        ]
+        assert check("S1", rows, "2026-07-01").due == date(2026, 3, 15)
+
+    def test_extension_by_other_branch_is_ignored(self):
+        rows = [
+            row("2025-02-27", A.REFERRED, "J19"),
+            row("2025-11-20", A.REPORTING_EXTENDED, "J19", new_deadline="2026-01-15"),
+        ]
+        result = check("S1", rows, "2026-01-01")
+        assert result.due == date(2025, 12, 3)
+        assert any("branch of origination" in s.description for s in result.derivation)
 
     @pytest.mark.parametrize(
         ("referred", "due"),
@@ -280,8 +329,8 @@ class TestStructuredBreakdown:
     def test_ignored_extension_is_tagged(self):
         rows = [
             row("2025-02-27", A.REFERRED, "J19"),
-            row("2025-11-20", A.REPORTING_EXTENDED, "J19", new_deadline="2026-01-15"),
+            senate_extension("2026-01-10", "2026-03-15"),
         ]
-        result = check("S1", rows, "2025-11-25")
+        result = check("S1", rows, "2026-01-20")
         assert any(s.role == StepRole.EXTENSION_IGNORED for s in result.derivation)
         assert result.completed_on is None

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Reporting extensions on Senate bills in joint committees now count when the Senate
+  orders them before the deadline has passed (Joint Rule 30). An extension ordered after
+  the deadline passed, or by the House, is still not counted, and the finding says why.
+- Ruleset s194, version 7.
+
+### Fixed
+
+- A bill recommitted to a committee that had already reported on it is now tracked as a
+  new referral to that committee. Previously the recommittal was not recognized, so the
+  committee's second report went unchecked.
+
+
 ## [2.0.0] - 2026-11-19
 
 ### Added

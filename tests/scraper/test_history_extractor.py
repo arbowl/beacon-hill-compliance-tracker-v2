@@ -49,6 +49,22 @@ def test_adverse_report_under_joint_rule_is_a_report():
     assert A.REPORTED in [t for t, _ in classify(text)]
 
 
+def test_recommittal_is_a_referral():
+    text = (
+        "Recommitted to the committee on State Administration and Regulatory Oversight"
+    )
+    assert classify(text) == [
+        (
+            A.REFERRED,
+            {
+                "committee": "State Administration and Regulatory Oversight",
+                "committee_name": "State Administration and Regulatory Oversight",
+                "committee_id": "J25",
+            },
+        )
+    ]
+
+
 def test_classify_unknown_and_compound():
     assert classify("Something novel") == [(A.UNKNOWN, {})]
     kinds = [t for t, _ in classify("Accompanied a study order, see H5281")]

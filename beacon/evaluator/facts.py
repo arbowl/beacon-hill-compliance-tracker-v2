@@ -11,6 +11,7 @@ from beacon.domain.local_time import local_date
 from beacon.domain.observations import (
     ActionType,
     BillHistoryPayload,
+    Branch,
     DocumentKind,
     DocumentPayload,
     DocumentSearchPayload,
@@ -53,6 +54,7 @@ class Extension:
 
     granted_on: date
     until: date | None
+    branch: Branch
     raw_text: str
     evidence: EvidenceRef
 
@@ -277,7 +279,7 @@ def _tenures(
             )
         elif r.action_type == ActionType.REPORTING_EXTENDED:
             tenure.extensions.append(
-                Extension(r.action_date, r.new_deadline, r.raw_text, ref)
+                Extension(r.action_date, r.new_deadline, r.branch, r.raw_text, ref)
             )
         elif r.action_type in TERMINAL_ACTIONS:
             tenure.report = Report(r.action_date, r.action_type, r.raw_text, ref)

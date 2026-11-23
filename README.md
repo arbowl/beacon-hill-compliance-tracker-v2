@@ -123,7 +123,33 @@ data/
   reports/<date>/                <committee>.json, <committee>_audit.html
   events/                        <run_id>.jsonl, plan-<id>.jsonl (live progress)
   logs/beacon.log
+  spotcheck/<sample id>/         dossiers, answer keys, rules.md, manifest.json
+audits/ledger.jsonl              spot-check verdicts (committed)
 ```
+
+## Spot checks
+
+`beacon spotcheck` audits a sample of evaluations against their source pages and rule
+text. It reads the store only and makes no network requests.
+
+```
+uv run beacon spotcheck sample --count 5 [--seed N] [--label Provisional]
+uv run beacon --committee J19 spotcheck sample
+uv run beacon spotcheck record data/spotcheck/<sample id>
+uv run beacon spotcheck summary
+```
+
+`sample` draws from each committee's latest evaluation run, rotating across labels and
+then across distinct paths through the ruleset, so rare outcomes come up as often as
+common ones. Each tenure is replayed with current code. For each one it writes a blind
+dossier (raw history rows, hearings, document searches) and a separate key (classified
+rows, the projected tenure, the evaluation with its derivation, and any difference from
+the stored result). Tenures already in the ledger with the same input fingerprint are
+skipped, so a ruleset or extractor change makes them eligible again.
+
+`record` checks the auditor's `verdicts.json` against the sample's manifest and
+appends to `audits/ledger.jsonl`. The `spotcheck` skill in `.claude/skills/` describes
+the audit procedure.
 
 ## Versioning and the changelog
 

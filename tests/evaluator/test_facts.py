@@ -78,6 +78,26 @@ def test_rereferral_opens_new_tenure():
     assert tenures[0].tenure_id != tenures[1].tenure_id
 
 
+def test_recommittal_on_report_day_opens_new_tenure():
+    obs = history(
+        "H3430",
+        [
+            row("2025-02-27", A.REFERRED, "J25"),
+            row("2025-12-01", A.STUDY_ORDER, None, related_bills=("H4800",)),
+            row("2025-12-01", A.REPORTED, None),
+            row("2025-12-01", A.REFERRED, "J25"),
+            row("2025-12-18", A.ACCOMPANIED, None, related_bills=("H3326",)),
+            row("2025-12-18", A.REFERRED, "H34"),
+        ],
+    )
+    first, second = project(BillKey(194, "H3430"), [obs]).tenures_for("J25")
+    assert first.report is not None
+    assert first.report.reported_on == date(2025, 12, 1)
+    assert second.referred_on == date(2025, 12, 1)
+    assert second.report is not None
+    assert second.report.reported_on == date(2025, 12, 18)
+
+
 def test_reschedule_before_hearing_replaces_date():
     obs = history(
         "H1",
