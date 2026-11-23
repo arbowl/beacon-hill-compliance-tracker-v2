@@ -26,7 +26,12 @@ from beacon.domain.events import (
     RunFinished,
     RunStarted,
 )
-from beacon.domain.observations import CommitteeDocumentsPayload, ObservationKind
+from beacon.domain.observations import (
+    CommitteeDocumentsPayload,
+    DocumentSearchPayload,
+    HearingListPayload,
+    ObservationKind,
+)
 from beacon.evaluator.clauses import ClauseIndex
 from beacon.orchestrator import runner, stages
 from beacon.orchestrator.runner import RunRequest
@@ -228,6 +233,34 @@ def test_failed_documents_tab_fails_the_run(ctx: Context):
     del ctx.fetcher.pages[DOCUMENTS_TAB]
     with pytest.raises(StageError, match="Documents tab"):
         stages.collect(ctx, "J19")
+
+
+def test_committee_without_hearings_allows_exhaustive_searches(ctx: Context):
+    assert isinstance(ctx.fetcher, FixtureFetcher)
+    ctx.fetcher.pages[f"{BASE}/Committees/Detail/J19/Hearings"] = b"<p>None</p>"
+    assert stages._hearing_index(ctx, "J19") is None
+    stages.collect(ctx, "J19")
+    (listed,) = ctx.store.observations.of_kind(ObservationKind.HEARING_LIST)
+    assert isinstance(listed.payload, HearingListPayload)
+    assert listed.payload.hearing_ids == ()
+    assert stages._hearing_index(ctx, "J19") == {}
+    stages.scrape(ctx, "J19")
+    searches = [
+        o.payload
+        for b in BILLS
+        for o in ctx.store.observations.for_bill(
+            194, b, ObservationKind.DOCUMENT_SEARCH
+        )
+    ]
+    assert searches
+    assert any(isinstance(p, DocumentSearchPayload) and p.exhaustive for p in searches)
+
+
+def test_hearing_list_is_recorded(ctx: Context):
+    stages.collect(ctx, "J19")
+    (listed,) = ctx.store.observations.of_kind(ObservationKind.HEARING_LIST)
+    assert isinstance(listed.payload, HearingListPayload)
+    assert listed.payload.hearing_ids == ("5123",)
 
 
 def test_documents_tab_vote_becomes_vote_evidence(ctx: Context):

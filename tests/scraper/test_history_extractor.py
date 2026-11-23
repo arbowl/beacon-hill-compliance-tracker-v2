@@ -63,12 +63,55 @@ def test_recommittal_is_a_referral():
             },
         )
     ]
+@pytest.mark.parametrize(
+    ("text", "committee_id"),
+    [
+        (
+            "Reported, referred to the committee on Joint Rules, reported, rules "
+            "suspended and referred to the committee on Public Health",
+            "J16",
+        ),
+        (
+            "Reported, referred to the committee on Joint Rules, reported, rules "
+            "suspended, question divided (on motion of Fiola), and referred (on "
+            "motion of Fiola) to the committee on Economic Development and "
+            "Emerging Technologies",
+            "J12",
+        ),
+    ],
+)
+def test_compound_referral_takes_the_last_committee(text: str, committee_id: str):
+    referrals = [d for t, d in classify(text) if t == A.REFERRED]
+    assert [d["committee_id"] for d in referrals] == [committee_id]
 
 
 def test_classify_unknown_and_compound():
     assert classify("Something novel") == [(A.UNKNOWN, {})]
     kinds = [t for t, _ in classify("Accompanied a study order, see H5281")]
     assert A.STUDY_ORDER in kinds and A.ACCOMPANIED in kinds
+
+
+@pytest.mark.parametrize(
+    ("text", "deadline"),
+    [
+        ("Reporting date extended to Friday, March 6, 2026", "2026-03-06"),
+        ("Reporting date extended until Friday, November 7, 2025", "2025-11-07"),
+        ("Reported date extended to Wednesday, March 18, 2026", "2026-03-18"),
+        (
+            "Reported date extended to Wednesday, March 18, 2026 "
+            "(sections 45 to 72, inclusive, 85 and 86)",
+            "2026-03-18",
+        ),
+    ],
+)
+def test_extension_wordings_are_extensions_not_reports(text: str, deadline: str):
+    assert [(t, d["new_deadline"]) for t, d in classify(text)] == [
+        (A.REPORTING_EXTENDED, deadline)
+    ]
+
+
+def test_bare_reported_is_still_a_report():
+    assert A.REPORTED in [t for t, _ in classify("Reported favorably")]
 
 
 def test_title_and_rows():

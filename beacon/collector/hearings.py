@@ -11,10 +11,17 @@ from bs4 import BeautifulSoup
 from beacon.adapters.documents import read_document
 from beacon.domain.captures import Capture
 from beacon.domain.ids import bill_ids_in, normalize_bill_id
-from beacon.domain.observations import HearingDocument, HearingPayload, Observation
+from beacon.domain.observations import (
+    HearingDocument,
+    HearingListPayload,
+    HearingPayload,
+    Observation,
+)
 
 EXTRACTOR_ID = "hearing"
 EXTRACTOR_VERSION = 3
+LIST_EXTRACTOR_ID = "hearing_list"
+LIST_EXTRACTOR_VERSION = 1
 _HEARING_HREF = re.compile(r"/Events/Hearings/Detail/(\d+)")
 _BILL_HREF = re.compile(r"/Bills/\d+/([HS]\d+)", re.I)
 _EVENT_DATE = re.compile(
@@ -135,6 +142,23 @@ def extract(
             documents=documents,
             consulted=tuple(c.capture_id for c in consulted),
         ),
+    )
+
+
+def extract_list(
+    capture: Capture, hearing_ids: list[str], session: int, committee_id: str
+) -> Observation:
+    """One observation per hearings tab capture, even when it lists no hearings."""
+    key = f"{capture.capture_id}|{LIST_EXTRACTOR_ID}|{LIST_EXTRACTOR_VERSION}"
+    return Observation(
+        observation_id=uuid5(NAMESPACE_URL, key),
+        capture_id=capture.capture_id,
+        observed_at=capture.requested_at,
+        extractor_id=LIST_EXTRACTOR_ID,
+        extractor_version=LIST_EXTRACTOR_VERSION,
+        session=session,
+        committee_id=committee_id,
+        payload=HearingListPayload(hearing_ids=tuple(hearing_ids)),
     )
 
 

@@ -10,9 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Reporting extensions on Senate bills in joint committees now count when the Senate
-  orders them before the deadline has passed (Joint Rule 30). An extension ordered after
-  the deadline passed, or by the House, is still not counted, and the finding says why.
-- Ruleset s194, version 7.
+  orders them before the deadline has passed (Joint Rule 30).
 
 ### Fixed
 
@@ -20,6 +18,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   new referral to that committee. Previously the recommittal was not recognized, so the
   committee's second report went unchecked.
 
+## [2.0.1] - 2026-11-22
+
+### Changed
+
+- The House Committee on Rules is no longer checked for hearing notice. House Rule 7B
+  exempts it from the notice provisions of House Rule 17A.
+- Ruleset s194, version 7.
+
+### Fixed
+
+- Committees that hold no hearings, such as the House Committee on Rules, can now have
+  their vote records judged. Previously their empty hearings list was not recorded,
+  so the search for a vote record never counted as complete. Bills those committees
+  reported stayed Provisional indefinitely, even when no vote record was ever posted.
+  Such bills may now move from "Provisional" to "Non-Compliant" under House Rule 17B.
+- A bill history entry that lists extra procedural steps before the final referral, such
+  as "rules suspended, question divided (on motion of ...), and referred (on motion of ...)
+  to the committee on ...", is now read as a referral to that last committee.
+- A bill history entry reading "Reported date extended to ..." is now read as a
+  reporting deadline extension. Previously it was read as the committee reporting
+  the bill, so the extension date was taken as the report date. Affected bills may
+  move from "Non-Compliant" to "Provisional" or "Compliant".
+- A bill history entry reading "Reporting date extended until ..." is now read as a
+  reporting deadline extension. Previously it was not recognized, and the bill was
+  judged against its original deadline.
 
 ## [2.0.0] - 2026-11-19
 

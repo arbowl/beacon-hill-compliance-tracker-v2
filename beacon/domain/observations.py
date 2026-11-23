@@ -16,6 +16,7 @@ class ObservationKind(StrEnum):
     DOCUMENT_SEARCH = "document_search"
     DOCUMENT = "document"
     HEARING = "hearing"
+    HEARING_LIST = "hearing_list"
     COMMITTEE_DOCUMENTS = "committee_documents"
 
 
@@ -228,6 +229,19 @@ class HearingPayload(BaseModel):
     consulted: tuple[UUID, ...] = ()
 
 
+class HearingListPayload(BaseModel):
+    """A committee's hearings tab: the hearings it lists, possibly none.
+
+    Recorded so that a committee with no hearings is known to have none, rather
+    than looking as though its hearings were never collected.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal[ObservationKind.HEARING_LIST] = ObservationKind.HEARING_LIST
+    hearing_ids: tuple[str, ...]
+
+
 class CommitteeDocument(BaseModel):
     """A document listed on a committee's Documents tab.
 
@@ -265,6 +279,7 @@ Payload = Annotated[
     | DocumentSearchPayload
     | DocumentPayload
     | HearingPayload
+    | HearingListPayload
     | CommitteeDocumentsPayload,
     Field(discriminator="kind"),
 ]

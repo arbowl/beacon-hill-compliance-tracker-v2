@@ -290,6 +290,18 @@ def _collect_hearings(ctx: Context, key: CommitteeKey, tracker: Tracker) -> int:
             f"Hearings list failed with status {result.capture.http_status}"
         )
     hearing_ids = hearings.parse_hearing_list(body)
+    if not ctx.store.observations.exists(
+        result.capture.capture_id,
+        hearings.LIST_EXTRACTOR_ID,
+        hearings.LIST_EXTRACTOR_VERSION,
+    ):
+        ctx.store.observations.append_many(
+            [
+                hearings.extract_list(
+                    result.capture, hearing_ids, s.session, key.committee_id
+                )
+            ]
+        )
     for hearing_id in hearing_ids:
         page_result, page_body = _fetch(
             ctx, hearings.hearing_url(s.base_url, hearing_id), tracker.run_id
@@ -437,8 +449,14 @@ def _hearing_index(
 ) -> dict[str, list[HearingDocument]] | None:
     """Hearing documents per bill, from each hearing's latest observation.
 
-    None when no hearing of the committee had been observed by as_of.
+    None when neither the committee's hearings tab nor any of its hearings had
+    been observed by as_of. A hearings tab listing no hearings gives an empty
+    index: the committee is known to have none.
     """
+    listed = any(
+        o.committee_id == committee_id and (as_of is None or o.observed_at <= as_of)
+        for o in ctx.store.observations.of_kind(ObservationKind.HEARING_LIST)
+    )
     latest: dict[str, Observation] = {}
     for o in ctx.store.observations.of_kind(ObservationKind.HEARING):
         if o.committee_id != committee_id or not isinstance(o.payload, HearingPayload):
@@ -449,7 +467,7 @@ def _hearing_index(
         if held is None or o.observed_at >= held.observed_at:
             latest[o.payload.hearing_id] = o
     if not latest:
-        return None
+        return {} if listed else None
     index: dict[str, list[HearingDocument]] = {}
     for o in latest.values():
         assert isinstance(o.payload, HearingPayload)

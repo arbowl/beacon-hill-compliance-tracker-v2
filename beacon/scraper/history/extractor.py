@@ -18,7 +18,7 @@ from beacon.scraper.history.committees import normalize_committee_name
 from beacon.scraper.history.nodes import ACTION_NODES
 
 EXTRACTOR_ID = "bill_history"
-EXTRACTOR_VERSION = 6
+EXTRACTOR_VERSION = 7
 _DATE_FORMATS = ("%m/%d/%Y", "%B %d, %Y")
 _NODES = sorted(ACTION_NODES, key=lambda n: n.priority)
 _BILL_MENTION = re.compile(r"\b([HS])\.?\s?(\d{1,5})\b")

@@ -184,24 +184,28 @@ class TestSenateCommittee:
 
 class TestHouseCommittee:
     def test_seventy_two_hours_is_met(self):
-        rows = [referred("H33"), scheduled("2025-09-12", "2025-09-15", "H33")]
-        result = one(rows, committee="H33")
+        rows = [referred("H34"), scheduled("2025-09-12", "2025-09-15", "H34")]
+        result = one(rows, committee="H34")
         assert result.status == S.MET
         assert cites(result, HR17A_P15)
 
     def test_under_seventy_two_hours_is_unmet(self):
-        rows = [referred("H33"), scheduled("2025-09-13", "2025-09-15", "H33")]
-        result = one(rows, committee="H33")
+        rows = [referred("H34"), scheduled("2025-09-13", "2025-09-15", "H34")]
+        result = one(rows, committee="H34")
         assert result.status == S.UNMET
         assert "72 hours" in result.detail
 
     def test_change_is_not_judged(self):
         rows = [
-            referred("H33"),
-            scheduled("2025-09-01", "2025-09-15", "H33"),
-            row("2025-09-14", A.HEARING_TIME_CHANGED, "H33"),
+            referred("H34"),
+            scheduled("2025-09-01", "2025-09-15", "H34"),
+            row("2025-09-14", A.HEARING_TIME_CHANGED, "H34"),
         ]
-        assert one(rows, committee="H33").status == S.MET
+        assert one(rows, committee="H34").status == S.MET
+
+    def test_house_rules_is_exempt(self):
+        rows = [referred("H33"), scheduled("2025-09-13", "2025-09-15", "H33")]
+        assert results(rows, committee="H33") == []
 
 
 def test_announcement_before_handover_counts_for_the_new_committee():

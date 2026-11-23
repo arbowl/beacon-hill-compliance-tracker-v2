@@ -6,5 +6,5 @@ ruleset = "s194"
 rules_dir = "rules"
 
 [fetch]
-min_interval = 0.1
+min_interval = 0.5
 max_workers = 16
