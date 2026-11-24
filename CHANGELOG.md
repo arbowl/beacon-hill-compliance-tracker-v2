@@ -15,13 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with an open House referral, which owes a posted vote once reported). They have no
   label and count toward no total; site bundles carry them in a new
   `no_requirements` section, and the browser runner lists them under their own
-  filter. Previously these referrals were left out silently.
+  filter. Previously these referrals were left out.
 
 ### Changed
 
 - Reporting extensions on Senate bills in joint committees now count when the Senate
   orders them before the deadline has passed (Joint Rule 30).
-- Hearing notice is now judged once per hearing, on the announcement that set its
+- Hearing notice is now judged once per hearing on the announcement that set its
   date (ruleset s194 v8).
 - The House Committee on Bills in the Third Reading is no longer checked for posted
   votes. It examines and corrects bills ordered to a third reading (House Rule 22) and
@@ -42,14 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bill reported. Previously only the bill's own Committee Vote tab and bills it
   accompanied were searched, so these bills were judged to have no posted vote.
 - A bill recommitted to a committee that had already reported on it is now tracked as a
-  new referral to that committee. Previously the recommittal was not recognized, so the
-  committee's second report went unchecked.
+  new referral to that committee. Previously the recommittal was not recognized.
 - A hearing announced again for the same date, as the Legislature's site does when it
   adjusts an end time, no longer restarts the notice clock. Previously the repeat was
   judged as a new hearing date with a day or two of notice.
 - A correction to a hearing posted after the bill moved to another committee now stays
   with the committee that held the hearing. Previously the next committee was charged
-  with a hearing it never held, with negative days of notice.
+  with a hearing it never held with negative days of notice.
 
 ## [2.0.1] - 2026-11-22
 
