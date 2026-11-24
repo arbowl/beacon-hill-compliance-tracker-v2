@@ -221,8 +221,9 @@ const REASON = {not_yet_due: "The deadline has not passed yet.", missing_data: "
 const QUIET = ["No applicable requirements", "quiet"];
 const OWED = {none_apply: "None of the tracked rules applies to this referral.",
               none_yet: "Nothing is owed yet.",
-              accompanied: "It came before the committee only as part of"};
-const owedText = (n) => OWED[n.reason] + (n.carried_by ? ` ${billLabel(n.carried_by)}, which is checked instead.` : "") + (n.awaiting.length
+              accompanied: "It came before the committee only as part of",
+              record_incomplete: "The legislative record does not show how this bill came before the committee, so it is not judged."};
+const owedText = (n) => OWED[n.reason] + (n.carried_by ? ` ${billLabel(n.carried_by)}, which is checked instead.` : "") + (n.record_gap ? ` ${n.record_gap}` : "") + (n.awaiting.length
   ? ` ${n.awaiting.map((a) => (RULES[a] || [a])[0]).join(", ")} will be due once the committee reports.` : "");
 const owedCount = (counts) => Object.values(counts || {}).reduce((a, b) => a + b, 0);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -518,7 +519,7 @@ async function openBill(billId) {
       <div>${esc(plain(r.detail))}.${esc(wait)}</div>${rule ? `<details><summary>Read the rule</summary><blockquote>${esc(rule.clause_text)}</blockquote></details>` : ""}</div>`; }).join("");
   const owed = bill.no_requirements || [];
   const [label, cls] = e ? (LABEL[e.label] || [e.label, ""]) : owed.length ? QUIET : ["Not checked", ""];
-  const quiet = owed.map((n) => `<div class="item"><strong class="quiet">${esc(QUIET[0])}</strong> (${n.carried_by ? "came before the committee" : "referred"} ${esc(longDate(n.referred_on))})<div>${esc(owedText(n))} This referral has no result and is not counted.</div></div>`).join("");
+  const quiet = owed.map((n) => `<div class="item"><strong class="quiet">${esc(QUIET[0])}</strong> (${n.carried_by || n.record_gap ? "came before the committee" : "referred"} ${esc(longDate(n.referred_on))})<div>${esc(owedText(n))} This referral has no result and is not counted.</div></div>`).join("");
   $("story").innerHTML = `<article class="story" tabindex="-1" id="story-article"><h2>${esc(billLabel(bill.bill_id))}: ${esc(bill.title || "")}</h2>
     <p><strong class="${cls}">${esc(label)}</strong>${bill.url ? ` - <a href="${esc(bill.url)}" target="_blank" rel="noopener">View on malegislature.gov</a>` : ""}</p>
     ${bill.origin ? `<p class="hint">Produced by the committee from ${esc(bill.origin.source_bills.map(billLabel).join(", "))}; not judged on its own.</p>` : ""}

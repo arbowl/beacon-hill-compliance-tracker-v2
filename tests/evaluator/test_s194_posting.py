@@ -242,3 +242,41 @@ class TestChamberCommitteeVotes:
 
     def test_senate_committee_has_no_vote_obligation(self):
         assert self._results("S30") == []
+
+
+class TestVotesBeforeTheRules:
+    """Votes taken before a chamber's posting rule took effect are exempt."""
+
+    def _result(self, committee: str, reported_on: str) -> RequirementResult:
+        rows = [
+            row("2025-01-09", A.REFERRED, committee),
+            row(reported_on, A.REPORTED, committee),
+        ]
+        facts = project(BillKey(194, "H1"), [history("H1", rows)])
+        (tenure,) = facts.tenures_for(committee)
+        (obligation,) = VotesPosted().obligations(facts, tenure)
+        return VotesPosted().check(
+            obligation, facts, tenure, datetime(2025, 11, 18, 12, tzinfo=ET)
+        )
+
+    def test_house_vote_before_house_rules_is_exempt(self):
+        result = self._result("H34", "2025-02-24")
+        assert result.status == S.MET
+        assert "exempt" in result.detail
+        assert any(
+            s.role == StepRole.TOLERANCE and s.value == date(2025, 2, 25)
+            for s in result.derivation
+        )
+
+    def test_house_vote_on_adoption_day_is_judged(self):
+        result = self._result("H34", "2025-02-25")
+        assert (result.status, result.reason) == (S.PROVISIONAL, R.MISSING_DATA)
+
+    def test_joint_vote_before_joint_rules_is_exempt(self):
+        result = self._result("J19", "2025-06-25")
+        assert result.status == S.MET and "exempt" in result.detail
+        assert cites(result, JR1D_P14)
+
+    def test_joint_vote_on_adoption_day_is_judged(self):
+        result = self._result("J19", "2025-06-26")
+        assert (result.status, result.reason) == (S.PROVISIONAL, R.MISSING_DATA)

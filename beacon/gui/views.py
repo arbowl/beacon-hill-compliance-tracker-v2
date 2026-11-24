@@ -123,6 +123,7 @@ def _owed_nothing_view(item: NoRequirements) -> dict[str, Any]:
         "reason": item.reason.value,
         "awaiting": list(item.awaiting),
         "carried_by": item.carried_by,
+        "record_gap": item.record_gap,
     }
 
 

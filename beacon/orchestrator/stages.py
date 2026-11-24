@@ -1034,6 +1034,9 @@ def evaluate(ctx: Context, committee_id: str, as_of: datetime | None = None) -> 
             )
             ctx.store.evaluations.append_many(evaluations)
             ctx.store.evaluations.append_no_requirements(owed_nothing)
+            # A reviewed record gap that no longer applies: the history changed.
+            if stale := sum(g.committee_id == committee_id for g in facts.stale_gaps):
+                labels["record_gap_stale"] += stale
             labels.update(e.label.value for e in evaluations)
             labels.update(n.reason.value for n in owed_nothing)
             if evaluations:

@@ -65,3 +65,37 @@ def test_trailing_clause_does_not_override_the_named_committee():
         )
         == "H34"
     )
+
+
+def test_known_misspellings_resolve_exactly():
+    assert (
+        normalize_committee_name("State Administration and Reglatory Oversight")
+        == "J25"
+    )
+    assert normalize_committee_name("House Steering, Policy and Schedule") == "H52"
+
+
+def test_misspellings_never_match_as_substrings():
+    assert normalize_committee_name("Reglatory Oversight") is None
+    assert normalize_committee_name("Policy and Schedule") is None
+    assert normalize_committee_name("Senate Steering, Policy and Schedule") is None
+
+
+def test_elder_affairs_resolves_until_the_joint_rules():
+    assert normalize_committee_name("Elder Affairs", date(2025, 2, 27)) == "J20"
+    assert normalize_committee_name("Elder Affairs", date(2025, 6, 27)) is None
+    assert (
+        normalize_committee_name("Aging and Independence", date(2025, 6, 27)) == "J46"
+    )
+
+
+def test_elder_affairs_bill_moves_to_aging_and_independence():
+    body = (
+        b"<table><tr><td>2/27/2025</td><td>House</td>"
+        b"<td>Referred to the committee on Elder Affairs</td></tr>"
+        b"<tr><td>6/27/2025</td><td>House</td>"
+        b"<td>Referred, pursuant to an order adopted by the two branches, to the "
+        b"committee on Aging and Independence</td></tr></table>"
+    )
+    rows = parse_history(body, "H1352").rows
+    assert [r.committee_id for r in rows] == ["J20", "J46"]

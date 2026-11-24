@@ -122,6 +122,9 @@ class NoRequirementsReason(StrEnum):
     ACCOMPANIED = "accompanied"
     """The bill came before the committee only by accompanying another bill (a
     study order or new draft) that the committee held; that bill is judged."""
+    RECORD_INCOMPLETE = "record_incomplete"
+    """The legislative record does not show how the bill came before the committee
+    (a reviewed gap; see record_gaps), so nothing about the tenure can be judged."""
 
 
 class NoRequirements(BaseModel):
@@ -130,7 +133,9 @@ class NoRequirements(BaseModel):
     Kept apart from TenureEvaluation so nothing that counts labels can count it.
     awaiting names the requirements that will arise. carried_by names the bill
     this one accompanied before the committee, with referred_on the day it came
-    before it; such an item awaits nothing.
+    before it; such an item awaits nothing. record_gap explains a reviewed gap in
+    the record, with referred_on the day the bill must have come before the
+    committee; it too awaits nothing.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -145,11 +150,14 @@ class NoRequirements(BaseModel):
     as_of: AwareDatetime
     awaiting: tuple[str, ...] = ()
     carried_by: str | None = None
+    record_gap: str | None = None
 
     @property
     def reason(self) -> NoRequirementsReason:
-        """ACCOMPANIED when carried by another bill; else NONE_YET while any
-        requirement is awaited."""
+        """RECORD_INCOMPLETE for a gap in the record; ACCOMPANIED when carried by
+        another bill; else NONE_YET while any requirement is awaited."""
+        if self.record_gap is not None:
+            return NoRequirementsReason.RECORD_INCOMPLETE
         if self.carried_by is not None:
             return NoRequirementsReason.ACCOMPANIED
         if self.awaiting:

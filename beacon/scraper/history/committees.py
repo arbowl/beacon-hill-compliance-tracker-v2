@@ -7,10 +7,11 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
-RETIRED_AGRICULTURE = date(2025, 6, 26)
-"""The Joint Committee on Agriculture stopped meeting when the joint rules were
-adopted; its matters were re-referred to Agriculture and Fisheries, which the
-histories also abbreviate as "Agriculture"."""
+JOINT_RULES_ADOPTED = date(2025, 6, 26)
+"""Committees the joint rules did not continue stopped meeting on adoption; their
+matters were re-referred the next day. The Joint Committee on Agriculture gave way
+to Agriculture and Fisheries, which the histories also abbreviate as
+"Agriculture", and Elder Affairs to Aging and Independence."""
 
 
 class CommitteeChamber(StrEnum):
@@ -30,6 +31,8 @@ class CommitteeAlias:
         canonical_name: Full official committee name
         chamber: Chamber type (House, Senate, or Joint)
         short_names: List of name variations for matching
+        misspellings: Clerk's misspellings seen in histories; matched exactly,
+            never as substrings, so a typo cannot widen what a name matches
     """
 
     id: str
@@ -37,6 +40,7 @@ class CommitteeAlias:
     chamber: CommitteeChamber
     short_names: list[str]
     active_until: date | None = None
+    misspellings: tuple[str, ...] = ()
 
     def active_on(self, on: date | None) -> bool:
         """Whether the committee existed on a date (always, if no date)."""
@@ -129,6 +133,7 @@ _COMMITTEES: list[CommitteeAlias] = [
             "House Committee on Steering, Policy and Scheduling",
             "House Steering, Policy and Scheduling",
         ],
+        misspellings=("House Steering, Policy and Schedule",),  # S2960
     ),
     CommitteeAlias(
         "H53",
@@ -262,6 +267,7 @@ _COMMITTEES: list[CommitteeAlias] = [
             "State Administration and Regulatory Oversight",
             "Joint Committee on State Administration and Regulatory Oversight",
         ],
+        misspellings=("State Administration and Reglatory Oversight",),  # H3599
     ),
     CommitteeAlias(
         "J26",
@@ -381,7 +387,14 @@ _COMMITTEES: list[CommitteeAlias] = [
         "Joint Committee on Agriculture",
         CommitteeChamber.JOINT,
         ["Agriculture", "Joint Committee on Agriculture"],
-        active_until=RETIRED_AGRICULTURE,
+        active_until=JOINT_RULES_ADOPTED,
+    ),
+    CommitteeAlias(
+        "J20",
+        "Joint Committee on Elder Affairs",
+        CommitteeChamber.JOINT,
+        ["Elder Affairs", "Joint Committee on Elder Affairs"],
+        active_until=JOINT_RULES_ADOPTED,
     ),
     CommitteeAlias(
         "J45",
@@ -545,6 +558,10 @@ def normalize_committee_name(raw_name: str, on: date | None = None) -> str | Non
         for variant in committee.short_names:
             if variant.lower() == cleaned:
                 return committee.id
+    collapsed = " ".join(cleaned.split())
+    for committee in active:
+        if any(m.lower() == collapsed for m in committee.misspellings):
+            return committee.id
 
     # Second pass: substring matches. The alias found earliest wins, since a
     # trailing clause may name another committee ("House Ways and Means, with the

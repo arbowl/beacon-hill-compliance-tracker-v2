@@ -115,7 +115,7 @@ def labels(ctx: Context, run_id: UUID) -> dict[str, str]:
 EXPECTED = {
     "H1768": "Non-Compliant",
     "H1648": "Non-Compliant",
-    "H67": "Non-Compliant",
+    "H67": "Compliant",
     "S1168": "Compliant",
     "S1043": "Non-Compliant",
     "H4783": "Non-Compliant",
@@ -130,12 +130,13 @@ def test_full_pipeline(ctx: Context):
     assert labels(ctx, run_id) == EXPECTED
     (path,) = stages.report(ctx, "J19", [JsonReporter()])
     document = json.loads(path.read_text(encoding="utf-8"))
-    assert document["summary"] == {"Non-Compliant": 5, "Compliant": 1}
+    assert document["summary"] == {"Non-Compliant": 4, "Compliant": 2}
     h67 = next(b for b in document["bills"] if b["bill_id"] == "H67")
     h67_results = {r["requirement_id"]: r for r in h67["tenures"][0]["requirements"]}
     assert h67_results["summary_posted"]["status"] == "Met"
-    assert h67_results["votes_posted"]["status"] == "Unmet"
-    assert "No vote record found" in h67_results["votes_posted"]["detail"]
+    # Reported May 1, 2025, before the joint rules took effect: exempt.
+    assert h67_results["votes_posted"]["status"] == "Met"
+    assert "exempt" in h67_results["votes_posted"]["detail"]
     output = {o["bill_id"]: o for o in document["committee_output"]}
     assert set(output) == set(COMMITTEE_DOCUMENTS)
     assert output["H4372"]["source_bills"] == ["H1768"]

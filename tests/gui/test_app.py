@@ -108,7 +108,7 @@ def test_busy_lock_is_reported(settings: Settings):
 def test_results_and_bill_detail(populated: Settings):
     client = _client(build_app(populated, FakeRunner()))
     results = client.get("/api/committees/J19/results").json()
-    assert results["summary"] == {"Non-Compliant": 5, "Compliant": 1}
+    assert results["summary"] == {"Non-Compliant": 4, "Compliant": 2}
     assert results["requirement_totals"]["report_out_deadline"]["Met"] >= 1
     s1168 = next(b for b in results["bills"] if b["bill_id"] == "S1168")
     assert s1168["url"].endswith("/Bills/194/S1168")

@@ -17,11 +17,19 @@ from beacon.domain.observations import DocumentKind, PublicBasis
 from beacon.domain.provenance import ClauseRef, RuleSource
 from beacon.evaluator.facts import BillFacts, DocumentEvidence, Tenure
 from beacon.evaluator.rulesets.base import Obligation
+from beacon.evaluator.rulesets.s194.notice import RULES_EFFECTIVE
 from beacon.evaluator.rulesets.s194.requirements import S194Requirement
 
 JR1D_P14 = ClauseRef(RuleSource.JOINT, "1D", 14)
 HR17B_P1 = ClauseRef(RuleSource.HOUSE, "17B", 1)
 _VOTE_CLAUSE = {Chamber.JOINT: JR1D_P14, Chamber.HOUSE: HR17B_P1}
+VOTE_RULES_EFFECTIVE = {
+    Chamber.HOUSE: date(2025, 2, 25),
+    Chamber.JOINT: RULES_EFFECTIVE,
+}
+"""When each chamber's vote-posting rule took effect: the House adopted its rules
+on February 25, 2025, and the joint rules were adopted on June 26, 2025. Votes
+taken earlier are exempt, as hearings announced before the joint rules are."""
 JR1B_P4 = ClauseRef(RuleSource.JOINT, "1B", 4)
 BILLS_IN_THE_THIRD_READING = "H36"
 """Examines and corrects bills ordered to a third reading (House Rule 22), reporting
@@ -191,6 +199,35 @@ class VotesPosted:
         else:
             assert tenure.report is not None
             voted_on, basis = tenure.report.reported_on, "Vote date unknown; reported"
+        effective = VOTE_RULES_EFFECTIVE[_chamber(tenure)]
+        if voted_on < effective:
+            return RequirementResult(
+                requirement_id=self.requirement_id,
+                obligation_id=obligation.obligation_id,
+                status=RequirementStatus.MET,
+                detail=(
+                    f"Voted {voted_on}, before the posting rule took effect "
+                    f"{effective}: exempt"
+                ),
+                derivation=(
+                    DerivationStep(
+                        description=basis, value=voted_on, role=StepRole.TRIGGER
+                    ),
+                    DerivationStep(
+                        description=(
+                            f"Vote posting rule in effect for votes from {effective}; "
+                            "earlier votes are exempt"
+                        ),
+                        value=effective,
+                        clause=_VOTE_CLAUSE[_chamber(tenure)],
+                        role=StepRole.TOLERANCE,
+                    ),
+                ),
+                evidence=(
+                    *obligation.triggered_by,
+                    *(evidence.evidence if evidence else ()),
+                ),
+            )
         due = _end_of(voted_on) + VOTE_WINDOW
         window = _Window(
             due=due,

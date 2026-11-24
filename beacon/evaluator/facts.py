@@ -21,6 +21,13 @@ from beacon.domain.observations import (
     Observation,
     PublicBasis,
 )
+from beacon.evaluator.record_gaps import (
+    RECORD_GAPS,
+    RecordGap,
+    SuppliedReferral,
+    UnrecordedTransfer,
+    gaps_for,
+)
 
 TERMINAL_ACTIONS = frozenset(
     {ActionType.REPORTED, ActionType.STUDY_ORDER, ActionType.ACCOMPANIED}
@@ -241,6 +248,8 @@ class BillFacts:
     origin: Origin | None = None
     documents: tuple[DocumentEvidence, ...] = ()
     rides: tuple[Ride, ...] = ()
+    unrecorded: tuple[UnrecordedTransfer, ...] = ()
+    stale_gaps: tuple[RecordGap, ...] = ()
 
     def document(
         self, document_kind: DocumentKind, committee_id: str | None
@@ -262,6 +271,12 @@ class BillFacts:
     def carried_before(self, committee_id: str) -> Ride | None:
         """The first ride on a vehicle that the committee held, if any."""
         return next((r for r in self.rides if committee_id in r.committee_ids), None)
+
+    def unrecorded_before(self, committee_id: str) -> UnrecordedTransfer | None:
+        """A transfer to the committee that the record omits, if one is known."""
+        return next(
+            (g for g in self.unrecorded if g.committee_id == committee_id), None
+        )
 
 
 @dataclass
@@ -446,6 +461,113 @@ def _rides(
             )
         )
     return tuple(rides), used
+
+
+_NEW_DRAFT = re.compile(r"^(?:Recommended\s+)?new\s+draft\b", re.I)
+_SUBSTITUTED = re.compile(r"\bnew\s+draft\b.*\bsubstituted\b", re.I)
+
+
+def _substitutions(
+    obs: Observation,
+    rows: list[HistoryRow],
+    vehicle_history: Callable[[str], Iterable[Observation]],
+    cutoff: date | None,
+) -> tuple[tuple[Ride, ...], list[UUID]]:
+    """Rides for a new draft substituted for the bill a committee held.
+
+    A draft substituted on the floor ("New draft (X) of S1", while S1 reads "New
+    draft (X) substituted, see S2") starts where its predecessor's tenure ended:
+    the committee lists the new draft, but held only its predecessor, which is
+    judged instead. A link needs the predecessor's own row naming the draft, on
+    the day one of its tenures ended.
+    """
+    rides, used = [], []
+    for r in rows:
+        if not _NEW_DRAFT.search(r.raw_text):
+            continue
+        for parent in r.related_bills:
+            current = _current_history(vehicle_history(parent))
+            if current is None:
+                continue
+            parent_rows = [
+                p
+                for p in _ordered_rows(current)
+                if cutoff is None or p.action_date <= cutoff
+            ]
+            named = [
+                p
+                for p in parent_rows
+                if _SUBSTITUTED.search(p.raw_text) and obs.bill_id in p.related_bills
+            ]
+            if not named:
+                continue
+            substituted_on = named[0].action_date
+            key = BillKey(obs.session, parent)
+            held = {
+                t.committee_id: Held(t.committee_id, substituted_on)
+                for t in _tenures(key, current, parent_rows)
+                if _end(t) == substituted_on
+            }
+            if not held:
+                continue
+            rides.append(
+                Ride(
+                    vehicle=parent,
+                    accompanied_on=substituted_on,
+                    released_on=None,
+                    held=tuple(held.values()),
+                    evidence=EvidenceRef(
+                        observation_id=obs.observation_id, row_index=r.row_index
+                    ),
+                )
+            )
+            used.append(current.observation_id)
+    return tuple(rides), used
+
+
+def _supply_referrals(
+    rows: list[HistoryRow], gaps: Iterable[SuppliedReferral]
+) -> tuple[list[HistoryRow], list[SuppliedReferral]]:
+    """Insert each referral the history omits just before its anchor row.
+
+    The supplied row is dated referred_on but placed after every row of that day,
+    so nothing else the bill did that day closes it; it shares the anchor's
+    row_index, which is the evidence cited for it. A gap whose committee the
+    history already refers the bill to, or whose anchor row is missing, is stale.
+    """
+    stale = []
+    for gap in gaps:
+        referred = any(
+            r.action_type in REFERRAL_ACTIONS and r.committee_id == gap.committee_id
+            for r in rows
+        )
+        at = next(
+            (
+                i
+                for i, r in enumerate(rows)
+                if r.action_date == gap.anchor_on
+                and r.raw_text.startswith(gap.anchor_prefix)
+            ),
+            None,
+        )
+        if referred or at is None:
+            stale.append(gap)
+            continue
+        anchor = rows[at]
+        while at > 0 and rows[at - 1].row_index == anchor.row_index:
+            at -= 1
+        supplied = anchor.model_copy(
+            update={
+                "action_date": gap.referred_on,
+                "action_type": ActionType.REFERRED,
+                "committee_id": gap.committee_id,
+                "hearing_date": None,
+                "new_deadline": None,
+                "related_bills": (),
+            }
+        )
+        rows = [*rows[:at], supplied, *rows[at:]]
+    return rows, stale
 
 
 def _end(tenure: Tenure) -> date | None:
@@ -687,6 +809,7 @@ def project(
     hearings: Iterable[Observation] = (),
     as_of: datetime | None = None,
     vehicle_history: Callable[[str], Iterable[Observation]] | None = None,
+    gaps: tuple[RecordGap, ...] = RECORD_GAPS,
 ) -> BillFacts:
     """Derive facts from a bill's observations and its committees' hearings.
 
@@ -696,6 +819,8 @@ def project(
     carries its own event date. With vehicle_history, which gives a bill's
     observations by bill id, each bill this one accompanied is read for the
     committees that held it during the ride; without it, rides name none.
+    gaps are the reviewed gaps in the record (record_gaps), applied only while
+    the history itself shows no tenure before their committee.
     """
     observations = list(observations)
     hearings = list(hearings)
@@ -716,6 +841,16 @@ def project(
     cutoff = local_date(as_of) if as_of is not None else None
     if cutoff is not None:
         rows = [r for r in rows if r.action_date <= cutoff]
+    own = gaps_for(gaps, bill.session, bill.bill_id)
+    rows, stale = _supply_referrals(
+        rows,
+        (
+            g
+            for g in own
+            if isinstance(g, SuppliedReferral)
+            and (cutoff is None or g.anchor_on <= cutoff)
+        ),
+    )
     latest = _latest_hearings(hearings)
     sources = [current.observation_id]
     base = _tenures(bill, current, rows)
@@ -731,6 +866,20 @@ def project(
         bill, current, rows, vehicle_history or (lambda _: ()), cutoff
     )
     sources.extend(carried_by)
+    substituted, predecessors = _substitutions(
+        current, rows, vehicle_history or (lambda _: ()), cutoff
+    )
+    rides += substituted
+    sources.extend(predecessors)
+    held = {t.committee_id for t in tenures}
+    unrecorded = []
+    for g in own:
+        if not isinstance(g, UnrecordedTransfer):
+            continue
+        if g.committee_id in held:
+            stale.append(g)
+        elif cutoff is None or g.transferred_on <= cutoff:
+            unrecorded.append(g)
     return BillFacts(
         bill=bill,
         tenures=tuple(tenures),
@@ -739,4 +888,6 @@ def project(
         origin=_origin(current, rows),
         documents=documents,
         rides=rides,
+        unrecorded=tuple(unrecorded),
+        stale_gaps=tuple(stale),
     )

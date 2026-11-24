@@ -81,12 +81,15 @@ def evaluate(
     Deterministic for identical inputs. With no tenure, a committee-originated
     document yields nothing, and so does a bill that came before the committee
     only by accompanying a bill it held, which is judged in its stead (see
-    no_requirements). Any other bill with no observed tenure before the
-    committee yields one Provisional evaluation with reason MISSING_DATA.
+    no_requirements), and so does a reviewed gap in the record. Any other bill
+    with no observed tenure before the committee yields one Provisional
+    evaluation with reason MISSING_DATA.
     """
     tenures = facts.tenures_for(committee_id)
     if not tenures and (
-        facts.origin is not None or facts.carried_before(committee_id) is not None
+        facts.origin is not None
+        or facts.carried_before(committee_id) is not None
+        or facts.unrecorded_before(committee_id) is not None
     ):
         return []
     if not tenures:
@@ -144,7 +147,23 @@ def no_requirements(
     """The tenures before one committee that evaluate() passes over: no
     requirement arose. Each names the requirements still awaited, if any. A bill
     with no tenure that a vehicle carried before the committee yields one item
-    naming the vehicle."""
+    naming the vehicle; one whose record omits its transfer there, one item
+    explaining the gap."""
+    gap = facts.unrecorded_before(committee_id)
+    if not facts.tenures_for(committee_id) and gap is not None:
+        return [
+            NoRequirements(
+                run_id=run_id,
+                bill=facts.bill,
+                committee_id=committee_id,
+                tenure_id=f"{facts.bill}:{committee_id}:{gap.transferred_on.isoformat()}",
+                referred_on=gap.transferred_on,
+                ruleset_id=ruleset.ruleset_id,
+                ruleset_version=ruleset.version,
+                as_of=as_of,
+                record_gap=gap.note,
+            )
+        ]
     if not facts.tenures_for(committee_id) and facts.origin is None:
         ride = facts.carried_before(committee_id)
         held = ride.held_by(committee_id) if ride else None

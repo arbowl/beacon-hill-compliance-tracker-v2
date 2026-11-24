@@ -28,6 +28,10 @@ from beacon.scraper.history.fields import (
 # "Reported date extended to ..." is a clerk's variant of "Reporting date
 # extended", not a report.
 REPORTED_NOT_EXTENSION = r"Reported(?!\s+date\s+extended)"
+# A referral names its committee "the committee on X", now and then as "the House
+# committee on X", or, before the House forms its committees, "the temporary
+# committee on X".
+THE_COMMITTEE_ON = r"the\s+(?:(?:House|Senate|Joint|temporary)\s+)?committees?\s+on"
 
 
 @dataclass
@@ -128,30 +132,30 @@ def create_action_nodes() -> list[ActionNode]:
                 # referral, e.g. "rules suspended, question divided (on motion of
                 # X), and referred (on motion of X) to the committee on ...".
                 re.compile(
-                    r"referred\s+to\s+the\s+committees?\s+on\s+[^,]+(?:,\s+[^,]+)*,?\s+"
+                    rf"referred\s+to\s+{THE_COMMITTEE_ON}\s+[^,]+(?:,\s+[^,]+)*,?\s+"
                     r"(?:reported|discharged)\b.*?\b"
-                    r"referred\s+(?:.*?\s+)?to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    rf"referred\s+(?:.*?\s+)?to\s+{THE_COMMITTEE_ON}\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
                     r"Read[;,]?\s+and\s+referred[,\s]+as\s+relates\s+to\s+sections?\s+"
-                    r"(?P<sections>.+?)[,\s]+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    rf"(?P<sections>.+?)[,\s]+to\s+{THE_COMMITTEE_ON}\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"referred\s+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    rf"referred\s+to\s+{THE_COMMITTEE_ON}\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"Read[;,]?\s+and\s+referred\s+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    rf"Read[;,]?\s+and\s+referred\s+to\s+{THE_COMMITTEE_ON}\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"referred.*?to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    rf"referred.*?to\s+{THE_COMMITTEE_ON}\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"Recommitted\s+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    rf"Recommitted\s+to\s+{THE_COMMITTEE_ON}\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
             ],
@@ -172,7 +176,7 @@ def create_action_nodes() -> list[ActionNode]:
             category="referral-committee",
             patterns=[
                 re.compile(
-                    r"Discharged\s+to\s+the\s+committee\s+on\s+(?P<committee>.+)", re.I
+                    rf"Discharged\s+to\s+{THE_COMMITTEE_ON}\s+(?P<committee>.+)", re.I
                 ),
             ],
             extractors={

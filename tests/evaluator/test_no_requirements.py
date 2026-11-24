@@ -1,6 +1,6 @@
 """Tenures that owe nothing: reported apart from labels, with why."""
 
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -16,6 +16,7 @@ from beacon.domain.observations import Branch
 from beacon.evaluator.clauses import ClauseIndex
 from beacon.evaluator.engine import evaluate, no_requirements
 from beacon.evaluator.facts import project
+from beacon.evaluator.record_gaps import UnrecordedTransfer
 from beacon.evaluator.rulesets.s194.ruleset import RULESET
 from beacon.ports.store import RunStatus, Stage
 from beacon.reporters.audit_html import AuditReporter
@@ -170,3 +171,49 @@ def test_bill_carried_by_vehicle_names_it(tmp_path: Path, clause_index: ClauseIn
     html = path.read_text(encoding="utf-8")
     assert "Came before the committee December 24, 2025" in html
     assert "only as part of S.2891, which is checked instead." in html
+
+
+def test_record_gap_owes_nothing_and_says_why(
+    tmp_path: Path, clause_index: ClauseIndex
+):
+    gap = UnrecordedTransfer(
+        session=194,
+        bill_id="H4319",
+        committee_id="J45",
+        transferred_on=date(2025, 6, 27),
+        note="The bill history does not record its transfer to the committee.",
+    )
+    rows = [
+        row("2025-04-03", A.REFERRED, "J38"),
+        row("2025-09-04", A.DISCHARGED, "J21"),
+    ]
+    facts = project(BillKey(194, "H4319"), [history("H4319", rows)], gaps=(gap,))
+    assert evaluate(facts, "J45", RULESET, clause_index, AS_OF, RUN) == []
+    (item,) = no_requirements(facts, "J45", RULESET, AS_OF, RUN)
+    assert item.reason == N.RECORD_INCOMPLETE and item.record_gap == gap.note
+    assert item.tenure_id == "194/H4319:J45:2025-06-27"
+    assert item.awaiting == () and item.carried_by is None
+
+    report = ReportInput(
+        session=194,
+        committee_id="J45",
+        committee_name="Joint Committee on Agriculture and Fisheries",
+        evaluations=[],
+        bills=[
+            BillRecord(
+                session=194,
+                bill_id="H4319",
+                url="https://malegislature.gov/Bills/194/H4319",
+                title="An Act relative to agriculture",
+            )
+        ],
+        committee_url="https://malegislature.gov/Committees/Detail/J45",
+        no_requirements=[item],
+    )
+    (published,) = build_bundle(report, clause_index).no_requirements
+    assert (published.reason.value, published.note) == ("record_incomplete", gap.note)
+
+    (path,) = AuditReporter(clause_index).write(report, tmp_path / "out")
+    html = path.read_text(encoding="utf-8")
+    assert "does not show how this bill came before the committee" in html
+    assert gap.note in html

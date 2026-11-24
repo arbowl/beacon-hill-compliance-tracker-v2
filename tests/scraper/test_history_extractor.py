@@ -263,3 +263,70 @@ def test_named_third_reading_referral_follows_the_branch(
 def test_third_reading_committee_reports(branch: str, text: str, committee_id: str):
     rows = parse_history(_table(("07/17/2025", branch, text))).rows
     assert _of(rows, A.REPORTED) == [(0, committee_id)]
+
+
+def _rows(*cells: tuple[str, str, str]):
+    body = "".join(
+        f"<tr><td>{d}</td><td>{b}</td><td>{t}</td></tr>" for d, b, t in cells
+    )
+    return parse_history(f"<table>{body}</table>".encode(), "S1").rows
+
+
+@pytest.mark.parametrize(
+    ("text", "committee_id"),
+    [
+        (
+            "Read; and referred to the House committee on Steering, Policy and "
+            "Scheduling",
+            "H52",
+        ),
+        (
+            "Read; and referred to the temporary committee on House Ways and Means",
+            "H34",
+        ),
+        (
+            "Read; and referred to the committee on House Steering, Policy and "
+            "Schedule",
+            "H52",
+        ),
+        (
+            "Discharged to the committee on State Administration and Reglatory "
+            "Oversight",
+            "J25",
+        ),
+    ],
+)
+def test_referral_variants_name_the_committee(text: str, committee_id: str):
+    referrals = [
+        r
+        for r in _rows(("12/4/2025", "House", text))
+        if r.action_type in (A.REFERRED, A.DISCHARGED)
+    ]
+    assert [r.committee_id for r in referrals] == [committee_id]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            "Read second, amended (as recommended by the committee on House Ways and "
+            "Means)",
+            [(A.READ_SECOND, None)],
+        ),
+        (
+            "Read; and referred to the committee on House Steering, Policy and "
+            "Scheduling",
+            [(A.REFERRED, "H52"), (A.READ, None)],
+        ),
+    ],
+)
+def test_widened_referral_leaves_other_rows_alone(text: str, expected: list):
+    rows = _rows(("7/31/2026", "House", text))
+    assert [(r.action_type, r.committee_id) for r in rows] == expected
+
+
+def test_house_committee_report_is_not_a_referral():
+    rows = _rows(
+        ("3/19/2026", "House", "Reported from the committee on House Ways and Means")
+    )
+    assert [(r.action_type, r.committee_id) for r in rows] == [(A.REPORTED, "H34")]

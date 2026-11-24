@@ -150,6 +150,7 @@ def build_bundle(report: ReportInput, index: ClauseIndex) -> v1.CommitteeBundle:
                 reason=v1.NoRequirementsReason(n.reason.value),
                 awaiting=tuple(v1.RequirementId(a) for a in n.awaiting),
                 carried_by=n.carried_by,
+                note=n.record_gap,
             )
             for n in report.no_requirements
         ),

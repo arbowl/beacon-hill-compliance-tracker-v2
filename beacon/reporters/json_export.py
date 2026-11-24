@@ -62,6 +62,7 @@ class JsonReporter:
                     "reason": n.reason.value,
                     "awaiting": list(n.awaiting),
                     "carried_by": n.carried_by,
+                    "record_gap": n.record_gap,
                 }
                 for n in report.no_requirements
             ],

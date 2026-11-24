@@ -7,6 +7,7 @@ from beacon.domain.ids import BillKey
 from beacon.domain.observations import ActionType as A
 from beacon.domain.observations import Branch
 from beacon.evaluator.facts import project
+from beacon.evaluator.record_gaps import SuppliedReferral, UnrecordedTransfer
 from tests.builders import hearing, history, row
 
 BILL = BillKey(194, "H1234")
@@ -517,3 +518,193 @@ def test_ride_without_vehicle_history_names_no_committee():
     facts = project(BillKey(194, "S185"), [history("S185", S185_ROWS)])
     (ride,) = facts.rides
     assert ride.committee_ids == ()
+
+
+# S2712 was ordered to a third reading in the Senate; on October 1, 2026 it was read
+# third and the new draft S3273 substituted for it, which went on to the House.
+S = Branch.SENATE
+S2712 = history(
+    "S2712",
+    [
+        row("2025-11-10", A.REFERRED, "J23", branch=S),
+        row("2026-03-19", A.REPORTED, branch=S),
+        row("2026-04-09", A.REFERRED_TO_BILLS_IN_THIRD_READING, "S31", branch=S),
+        row("2026-10-01", A.READ_THIRD, "S31", branch=S),
+        row(
+            "2026-10-01",
+            A.UNKNOWN,
+            branch=S,
+            text="New draft substituted (Cyr), see S3273",
+            related_bills=("S3273",),
+        ),
+    ],
+)
+S3273_ROWS = [
+    row(
+        "2026-10-01",
+        A.UNKNOWN,
+        branch=S,
+        text="New draft (Cyr) of S2712",
+        related_bills=("S2712",),
+    ),
+    row("2026-10-01", A.PASSED_TO_BE_ENGROSSED, branch=S),
+    row("2026-10-05", A.REFERRED, "H52"),
+]
+
+
+def test_substituted_draft_rides_on_its_predecessor():
+    facts = project(
+        BillKey(194, "S3273"),
+        [history("S3273", S3273_ROWS)],
+        vehicle_history=vehicles(S2712),
+    )
+    ride = facts.carried_before("S31")
+    assert ride is not None and ride.vehicle == "S2712"
+    assert ride.accompanied_on == date(2026, 10, 1)
+    assert ride.committee_ids == ("S31",)
+    assert facts.carried_before("J23") is None
+    assert S2712.observation_id in facts.source_observations
+
+
+def test_substitution_must_end_the_predecessors_tenure():
+    # The substitution named here falls on a day no tenure of the predecessor ended.
+    later = history(
+        "S2712",
+        [
+            row("2026-04-09", A.REFERRED_TO_BILLS_IN_THIRD_READING, "S31", branch=S),
+            row(
+                "2026-09-01",
+                A.UNKNOWN,
+                branch=S,
+                text="New draft substituted (Cyr), see S3273",
+                related_bills=("S3273",),
+            ),
+        ],
+    )
+    facts = project(
+        BillKey(194, "S3273"),
+        [history("S3273", S3273_ROWS)],
+        vehicle_history=vehicles(later),
+    )
+    assert facts.carried_before("S31") is None
+
+
+def test_predecessor_must_name_the_draft():
+    other = history(
+        "S2712",
+        [
+            row("2026-04-09", A.REFERRED_TO_BILLS_IN_THIRD_READING, "S31", branch=S),
+            row("2026-10-01", A.READ_THIRD, "S31", branch=S),
+            row(
+                "2026-10-01",
+                A.UNKNOWN,
+                branch=S,
+                text="New draft substituted, see S9999",
+                related_bills=("S9999",),
+            ),
+        ],
+    )
+    facts = project(
+        BillKey(194, "S3273"),
+        [history("S3273", S3273_ROWS)],
+        vehicle_history=vehicles(other),
+    )
+    assert facts.rides == ()
+
+
+def test_substituted_draft_with_its_own_tenure_keeps_it():
+    # S3235's own history orders it to a third reading; that tenure is judged.
+    rows = [
+        *S3273_ROWS[:1],
+        row("2026-10-01", A.REFERRED_TO_BILLS_IN_THIRD_READING, "S31", branch=S),
+        row("2026-10-02", A.READ_THIRD, "S31", branch=S),
+    ]
+    facts = project(
+        BillKey(194, "S3273"), [history("S3273", rows)], vehicle_history=vehicles(S2712)
+    )
+    assert len(facts.tenures_for("S31")) == 1
+
+
+# S3188: House Ways and Means recorded a vote on July 31, 2026, but the history never
+# refers the bill there.
+S3188_ROWS = [
+    row("2026-07-30", A.PASSED_TO_BE_ENGROSSED, branch=S),
+    [
+        row(
+            "2026-07-31",
+            kind,
+            committee,
+            text=(
+                "Committee recommended ought to pass with an amendment, striking out "
+                "all after the enacting clause and inserting the text of H5634 , and "
+                "referred to the committee on House Steering, Policy and Scheduling"
+            ),
+        )
+        for kind, committee in ((A.REPORTED, None), (A.REFERRED, "H52"))
+    ],
+    row("2026-07-31", A.REPORTED, text="Committee reported that the matter be placed"),
+]
+SUPPLIED = SuppliedReferral(
+    session=194,
+    bill_id="S3188",
+    committee_id="H34",
+    referred_on=date(2026, 7, 30),
+    anchor_on=date(2026, 7, 31),
+    anchor_prefix="Committee recommended ought to pass with an amendment",
+    note="House Ways and Means recorded a vote.",
+)
+
+
+def test_supplied_referral_opens_a_tenure_closed_by_its_report():
+    obs = history("S3188", S3188_ROWS)
+    facts = project(BillKey(194, "S3188"), [obs], gaps=(SUPPLIED,))
+    (h34,) = facts.tenures_for("H34")
+    assert h34.tenure_id == "194/S3188:H34:2026-07-30"
+    assert h34.report is not None and h34.report.reported_on == date(2026, 7, 31)
+    assert h34.referral.row_index == 1
+    (h52,) = facts.tenures_for("H52")
+    assert h52.referred_on == date(2026, 7, 31)
+    assert facts.stale_gaps == ()
+
+
+def test_supplied_referral_is_stale_once_the_history_has_it():
+    rows = [row("2026-07-30", A.REFERRED, "H34"), *S3188_ROWS[1:]]
+    facts = project(BillKey(194, "S3188"), [history("S3188", rows)], gaps=(SUPPLIED,))
+    assert facts.tenures_for("H34")[0].referral.row_index == 0
+    assert facts.stale_gaps == (SUPPLIED,)
+
+
+def test_supplied_referral_without_its_anchor_is_stale():
+    rows = [S3188_ROWS[0], S3188_ROWS[2]]
+    facts = project(BillKey(194, "S3188"), [history("S3188", rows)], gaps=(SUPPLIED,))
+    assert facts.tenures_for("H34") == ()
+    assert facts.stale_gaps == (SUPPLIED,)
+
+
+TRANSFER = UnrecordedTransfer(
+    session=194,
+    bill_id="H4319",
+    committee_id="J45",
+    transferred_on=date(2025, 6, 27),
+    note="The transfer is not recorded.",
+)
+
+
+def test_unrecorded_transfer_applies_until_a_tenure_appears():
+    rows = [
+        row("2025-04-03", A.REFERRED, "J38"),
+        row("2025-09-04", A.DISCHARGED, "J21"),
+    ]
+    facts = project(BillKey(194, "H4319"), [history("H4319", rows)], gaps=(TRANSFER,))
+    assert facts.unrecorded_before("J45") == TRANSFER
+    assert facts.unrecorded_before("J21") is None
+
+    rows.insert(1, row("2025-06-27", A.REFERRED, "J45"))
+    facts = project(BillKey(194, "H4319"), [history("H4319", rows)], gaps=(TRANSFER,))
+    assert facts.unrecorded_before("J45") is None
+    assert facts.stale_gaps == (TRANSFER,)
+
+
+def test_gaps_apply_only_to_their_bill():
+    facts = project(BILL, [history("H1234", S3188_ROWS)], gaps=(SUPPLIED, TRANSFER))
+    assert facts.tenures_for("H34") == () and facts.stale_gaps == ()

@@ -19,6 +19,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is now attributed to the Joint Committee on Rules (J40) rather than House Rules,
   and the plural "committees on Rules of the two branches" is now recognized as a
   referral at all. Bill histories are re-extracted (extractor version 9).
+- A new draft substituted on the Senate floor for a bill ordered to a third
+  reading is no longer judged Provisional with no referral found under the Senate
+  Committee on Bills in the Third Reading. The committee held only the bill it
+  replaced, which is linked and checked instead.
+- Referrals worded "the House committee on …" or "the temporary committee on …",
+  and two misspelled committee names, are now recognized. Bill histories are
+  re-extracted (extractor version 10).
+- Referrals to the retired Joint Committee on Elder Affairs are now recognized,
+  as those to the retired Joint Committee on Agriculture already were.
+
+### Changed
+
+- Committee votes taken before the posting rule took effect are exempt, as
+  hearings announced before the joint rules already were: House votes before
+  February 25, 2025 (the House rules) and joint committee votes before June 26,
+  2025 (the joint rules). Ruleset version 10.
+- Where the legislative record itself leaves out how a bill came before a
+  committee, a gap reviewed by hand, the referral is shown as "No applicable
+  requirements" with a note explaining what the record omits. Site bundles carry
+  the new `record_incomplete` reason and a `note` field. One referral the history
+  omits, but that the committee's recorded vote demonstrates, is now judged.
 
 ## [2.1.0] - 2026-11-23
 
