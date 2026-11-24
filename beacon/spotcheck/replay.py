@@ -131,6 +131,9 @@ class Replayer:
             observations,
             self._committee_hearings(committee_id),
             as_of=self._as_of,
+            vehicle_history=lambda b: self._store.observations.for_bill(
+                bill.session, b, ObservationKind.BILL_HISTORY
+            ),
         )
         evaluations = evaluate(
             facts, committee_id, self._ruleset, self._clauses, self._as_of, self._run_id

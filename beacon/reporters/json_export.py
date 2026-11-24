@@ -61,6 +61,7 @@ class JsonReporter:
                     "referred_on": n.referred_on.isoformat(),
                     "reason": n.reason.value,
                     "awaiting": list(n.awaiting),
+                    "carried_by": n.carried_by,
                 }
                 for n in report.no_requirements
             ],

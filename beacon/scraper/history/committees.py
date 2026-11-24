@@ -358,7 +358,14 @@ _COMMITTEES: list[CommitteeAlias] = [
         "J40",
         "Joint Committee on Rules",
         CommitteeChamber.JOINT,
-        ["Rules", "Joint Committee on Rules", "Joint Rules"],
+        [
+            "Rules",
+            "Joint Committee on Rules",
+            "Joint Rules",
+            # "Referred to the committee on Rules of the two branches, acting
+            # concurrently": the House and Senate Rules committees sitting jointly.
+            "Rules of the two branches",
+        ],
     ),
     CommitteeAlias(
         "J43",
@@ -539,13 +546,24 @@ def normalize_committee_name(raw_name: str, on: date | None = None) -> str | Non
             if variant.lower() == cleaned:
                 return committee.id
 
-    # Second pass: Try substring matches
+    # Second pass: substring matches. The alias found earliest wins, since a
+    # trailing clause may name another committee ("House Ways and Means, with the
+    # amendment ... by the committee on Health Care Financing pending"); among
+    # those starting together the longest wins, so "Rules of the two branches"
+    # beats the "Rules" inside it.
+    best: tuple[int, int, str] | None = None
     for committee in active:
         for variant in committee.short_names:
-            if variant.lower() in cleaned or cleaned in variant.lower():
-                return committee.id
-
-    return None
+            lowered = variant.lower()
+            if lowered in cleaned:
+                key = (cleaned.index(lowered), -len(lowered), committee.id)
+            elif cleaned in lowered:
+                key = (0, -len(lowered), committee.id)
+            else:
+                continue
+            if best is None or key[:2] < best[:2]:
+                best = key
+    return best[2] if best else None
 
 
 def normalize_branch_name(raw_branch: str) -> str:

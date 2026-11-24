@@ -1010,6 +1010,11 @@ def evaluate(ctx: Context, committee_id: str, as_of: datetime | None = None) -> 
     bills = ctx.store.inventory.bills_for(s.session, committee_id)
     hearing_pages = _committee_hearings(ctx, committee_id)
 
+    def histories(bill_id: str) -> list[Observation]:
+        return ctx.store.observations.for_bill(
+            s.session, bill_id, ObservationKind.BILL_HISTORY
+        )
+
     def work(tracker: Tracker) -> dict[str, int]:
         labels: Counter[str] = Counter()
         for bill in bills:
@@ -1019,6 +1024,7 @@ def evaluate(ctx: Context, committee_id: str, as_of: datetime | None = None) -> 
                 observations,
                 hearing_pages,
                 as_of=moment,
+                vehicle_history=histories,
             )
             evaluations = evaluate_facts(
                 facts, committee_id, ruleset, ctx.clauses, moment, tracker.run_id

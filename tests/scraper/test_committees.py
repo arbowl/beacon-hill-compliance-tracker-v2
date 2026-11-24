@@ -32,3 +32,36 @@ def test_name_split_across_lines_still_matches():
         "Bill Number: S23"
     )
     assert get_committee("J10").matches(text)
+
+
+def test_rules_of_the_two_branches_is_joint_rules():
+    body = (
+        b"<table><tr><td>2/11/2026</td><td>House</td>"
+        b"<td>Bill reported favorably by committee and referred to the committee on "
+        b"Rules of the two branches, acting concurrently</td></tr>"
+        b"<tr><td>2/12/2026</td><td>House</td>"
+        b"<td>Bill reported favorably by committee and referred to the committees on "
+        b"Rules of the two branches, acting concurrently</td></tr>"
+        b"<tr><td>3/5/2026</td><td>House</td>"
+        b"<td>Discharged to the committee on House Rules</td></tr></table>"
+    )
+    referrals = [
+        (r.action_type.value, r.committee_id)
+        for r in parse_history(body, "H289").rows
+        if r.committee_id
+    ]
+    assert referrals == [
+        ("REFERRED", "J40"),
+        ("REFERRED", "J40"),
+        ("DISCHARGED", "H33"),
+    ]
+
+
+def test_trailing_clause_does_not_override_the_named_committee():
+    assert (
+        normalize_committee_name(
+            "House Ways and Means, with the amendment previously recommended by "
+            "the committee on Health Care Financing pending"
+        )
+        == "H34"
+    )

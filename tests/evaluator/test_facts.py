@@ -252,6 +252,23 @@ def test_compound_row_reports_before_referring():
     assert facts.tenures_for("H33")[0].referred_on == date(2025, 5, 1)
 
 
+def test_repeated_history_row_is_read_once():
+    reported = [
+        row("2025-12-01", A.REFERRED, "S30", branch=Branch.SENATE, text="Reported"),
+        row("2025-12-01", A.REPORTED, branch=Branch.SENATE, text="Reported"),
+    ]
+    obs = history(
+        "S1",
+        [row("2025-02-27", A.REFERRED, "J30"), reported, reported],
+    )
+    facts = project(BillKey(194, "S1"), [obs])
+    (j30,) = facts.tenures_for("J30")
+    (s30,) = facts.tenures_for("S30")
+    assert j30.report is not None
+    assert s30.report is None
+    assert s30.referral.row_index == 1
+
+
 def test_report_before_any_referral_is_committee_origin():
     obs = history(
         "H4372",
@@ -421,3 +438,82 @@ def test_reading_without_its_referral_closes_nothing():
     facts = project(BillKey(194, "H1"), [obs])
     assert facts.tenures_for("H34")[0].report is None
     assert facts.tenures_for("H36") == ()
+
+
+S185_ROWS = [
+    row("2025-02-27", A.REFERRED, "J47", branch=Branch.SENATE),
+    [
+        row(
+            "2025-12-18",
+            kind,
+            branch=Branch.SENATE,
+            text="Accompanied a study order (under JR10), see S2891",
+            related_bills=("S2891",),
+        )
+        for kind in (A.STUDY_ORDER, A.ACCOMPANIED)
+    ],
+    row("2026-05-07", A.REFERRED, "J47", branch=Branch.SENATE),
+]
+S2891 = history(
+    "S2891",
+    [
+        row("2025-12-18", A.REPORTED, "J47", branch=Branch.SENATE),
+        row(
+            "2025-12-18",
+            A.ACCOMPANIED,
+            branch=Branch.SENATE,
+            text="Accompanied by S185",
+            related_bills=("S185",),
+        ),
+        row("2025-12-18", A.REFERRED, "H33", branch=Branch.SENATE),
+        row("2025-12-24", A.DISCHARGED, "S29", branch=Branch.SENATE),
+    ],
+)
+
+
+def vehicles(*observations):
+    by_bill = {o.bill_id: [o] for o in observations}
+    return lambda bill_id: by_bill.get(bill_id, [])
+
+
+def test_accompanying_bill_rides_through_vehicle_committees():
+    facts = project(
+        BillKey(194, "S185"),
+        [history("S185", S185_ROWS)],
+        vehicle_history=vehicles(S2891),
+    )
+    (ride,) = facts.rides
+    assert ride.vehicle == "S2891"
+    assert ride.accompanied_on == date(2025, 12, 18)
+    assert ride.released_on == date(2026, 5, 7)
+    assert ride.committee_ids == ("H33", "S29")
+    assert facts.carried_before("S29") is ride
+    assert facts.carried_before("S30") is None
+    assert S2891.observation_id in facts.source_observations
+
+
+def test_vehicle_committee_after_release_does_not_carry():
+    later = history(
+        "S2891",
+        [
+            row("2025-12-18", A.REPORTED, "J47", branch=Branch.SENATE),
+            row("2026-06-01", A.REFERRED, "S29", branch=Branch.SENATE),
+        ],
+    )
+    facts = project(
+        BillKey(194, "S185"),
+        [history("S185", S185_ROWS)],
+        vehicle_history=vehicles(later),
+    )
+    assert facts.carried_before("S29") is None
+
+
+def test_vehicle_side_of_accompaniment_is_no_ride():
+    facts = project(BillKey(194, "S2891"), [S2891], vehicle_history=vehicles())
+    assert facts.rides == ()
+
+
+def test_ride_without_vehicle_history_names_no_committee():
+    facts = project(BillKey(194, "S185"), [history("S185", S185_ROWS)])
+    (ride,) = facts.rides
+    assert ride.committee_ids == ()

@@ -146,3 +146,31 @@ def test_citing_nonexistent_clause_fails_loudly(clause_index):
             clause_index,
             ruleset=Ruleset("bad", "1", (bogus,), _all_met),
         )
+
+
+def test_bill_carried_by_vehicle_is_not_judged(clause_index):
+    rider = history(
+        "S185",
+        [
+            row("2025-02-27", A.REFERRED, "J47"),
+            row(
+                "2025-12-18",
+                A.ACCOMPANIED,
+                text="Accompanied a study order, see S2891",
+                related_bills=("S2891",),
+            ),
+        ],
+    )
+    vehicle = history(
+        "S2891",
+        [row("2025-12-18", A.REPORTED, "J47"), row("2025-12-24", A.REFERRED, "J19")],
+    )
+    facts = project(
+        BillKey(194, "S185"),
+        [rider],
+        vehicle_history=lambda b: [vehicle] if b == "S2891" else [],
+    )
+    assert run(facts, "2026-06-01", clause_index) == []
+    alone = project(BillKey(194, "S185"), [rider])
+    (missing,) = run(alone, "2026-06-01", clause_index)
+    assert missing.results[0].reason == ProvisionalReason.MISSING_DATA

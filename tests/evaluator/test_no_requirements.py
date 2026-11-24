@@ -110,3 +110,63 @@ def test_run_with_only_owed_nothing_is_latest_and_reports(
     html = path.read_text(encoding="utf-8")
     assert "No applicable requirements" in html
     assert "No tracked rule applies to this referral." in html
+
+
+def test_bill_carried_by_vehicle_names_it(tmp_path: Path, clause_index: ClauseIndex):
+    rider = history(
+        "S185",
+        [
+            row("2025-02-27", A.REFERRED, "J47", branch=Branch.SENATE),
+            row(
+                "2025-12-18",
+                A.ACCOMPANIED,
+                branch=Branch.SENATE,
+                text="Accompanied a study order (under JR10), see S2891",
+                related_bills=("S2891",),
+            ),
+        ],
+    )
+    vehicle = history(
+        "S2891",
+        [
+            row("2025-12-18", A.REPORTED, "J47", branch=Branch.SENATE),
+            row("2025-12-18", A.REFERRED, "H33", branch=Branch.SENATE),
+            row("2025-12-24", A.DISCHARGED, "S29", branch=Branch.SENATE),
+        ],
+    )
+    as_of = datetime(2026, 1, 5, 12, tzinfo=ZoneInfo("America/New_York"))
+    facts = project(
+        BillKey(194, "S185"),
+        [rider],
+        as_of=as_of,
+        vehicle_history=lambda b: [vehicle] if b == "S2891" else [],
+    )
+    assert evaluate(facts, "S29", RULESET, clause_index, as_of, RUN) == []
+    (item,) = no_requirements(facts, "S29", RULESET, as_of, RUN)
+    assert item.reason == N.ACCOMPANIED and item.carried_by == "S2891"
+    assert item.tenure_id == "194/S185:S29:2025-12-24"
+    assert item.referred_on.isoformat() == "2025-12-24"
+    assert no_requirements(facts, "S30", RULESET, as_of, RUN) == []
+
+    report = ReportInput(
+        session=194,
+        committee_id="S29",
+        committee_name="Senate Committee on Rules",
+        evaluations=[],
+        bills=[
+            BillRecord(
+                session=194,
+                bill_id="S185",
+                url="https://malegislature.gov/Bills/194/S185",
+                title="An Act to promote school centered neighborhood development",
+            )
+        ],
+        committee_url="https://malegislature.gov/Committees/Detail/S29",
+        no_requirements=[item],
+    )
+    (published,) = build_bundle(report, clause_index).no_requirements
+    assert (published.reason.value, published.carried_by) == ("accompanied", "S2891")
+    (path,) = AuditReporter(clause_index).write(report, tmp_path / "out")
+    html = path.read_text(encoding="utf-8")
+    assert "Came before the committee December 24, 2025" in html
+    assert "only as part of S.2891, which is checked instead." in html

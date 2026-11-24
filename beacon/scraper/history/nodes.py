@@ -128,30 +128,30 @@ def create_action_nodes() -> list[ActionNode]:
                 # referral, e.g. "rules suspended, question divided (on motion of
                 # X), and referred (on motion of X) to the committee on ...".
                 re.compile(
-                    r"referred\s+to\s+the\s+committee\s+on\s+[^,]+(?:,\s+[^,]+)*,?\s+"
+                    r"referred\s+to\s+the\s+committees?\s+on\s+[^,]+(?:,\s+[^,]+)*,?\s+"
                     r"(?:reported|discharged)\b.*?\b"
-                    r"referred\s+(?:.*?\s+)?to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    r"referred\s+(?:.*?\s+)?to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
                     r"Read[;,]?\s+and\s+referred[,\s]+as\s+relates\s+to\s+sections?\s+"
-                    r"(?P<sections>.+?)[,\s]+to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    r"(?P<sections>.+?)[,\s]+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"referred\s+to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    r"referred\s+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"Read[;,]?\s+and\s+referred\s+to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    r"Read[;,]?\s+and\s+referred\s+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"referred.*?to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    r"referred.*?to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
                 re.compile(
-                    r"Recommitted\s+to\s+the\s+committee\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
+                    r"Recommitted\s+to\s+the\s+committees?\s+on\s+(?P<committee>[^,]+(?:,\s*[^,]+)*)",
                     re.I,
                 ),
             ],

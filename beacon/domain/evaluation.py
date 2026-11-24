@@ -119,14 +119,18 @@ class NoRequirementsReason(StrEnum):
     course of action (a requirement triggered only by a hearing still could)."""
     NONE_YET = "none_yet"
     """No tracked requirement has arisen yet; one will when the committee acts."""
+    ACCOMPANIED = "accompanied"
+    """The bill came before the committee only by accompanying another bill (a
+    study order or new draft) that the committee held; that bill is judged."""
 
 
 class NoRequirements(BaseModel):
     """A tenure that owed nothing as of one moment: no label, no rate.
 
     Kept apart from TenureEvaluation so nothing that counts labels can count it.
-    awaiting names the requirements that will arise; it is empty if and only if
-    the reason is NONE_APPLY.
+    awaiting names the requirements that will arise. carried_by names the bill
+    this one accompanied before the committee, with referred_on the day it came
+    before it; such an item awaits nothing.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -140,10 +144,14 @@ class NoRequirements(BaseModel):
     ruleset_version: str
     as_of: AwareDatetime
     awaiting: tuple[str, ...] = ()
+    carried_by: str | None = None
 
     @property
     def reason(self) -> NoRequirementsReason:
-        """NONE_YET while any requirement is awaited."""
+        """ACCOMPANIED when carried by another bill; else NONE_YET while any
+        requirement is awaited."""
+        if self.carried_by is not None:
+            return NoRequirementsReason.ACCOMPANIED
         if self.awaiting:
             return NoRequirementsReason.NONE_YET
         return NoRequirementsReason.NONE_APPLY

@@ -22,7 +22,7 @@ from beacon.scraper.history.nodes import ACTION_NODES
 from beacon.scraper.html import parse_html
 
 EXTRACTOR_ID = "bill_history"
-EXTRACTOR_VERSION = 8
+EXTRACTOR_VERSION = 9
 _DATE_FORMATS = ("%m/%d/%Y", "%B %d, %Y")
 _NODES = sorted(ACTION_NODES, key=lambda n: n.priority)
 _BILL_MENTION = re.compile(r"\b([HS])\.?\s?(\d{1,5})\b")

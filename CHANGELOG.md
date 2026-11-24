@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-24
+
+### Fixed
+
+- A bill that a committee lists only because it accompanied a study order or new
+  draft the committee held, as many bills before the House and Senate Rules
+  committees did, is no longer judged Provisional with no referral found. It is now
+  shown as "No applicable requirements", with a link to the order or draft, which
+  is checked in its place. Site bundles name that document in a new `carried_by`
+  field.
+- A referral to "the committee on Rules of the two branches, acting concurrently"
+  is now attributed to the Joint Committee on Rules (J40) rather than House Rules,
+  and the plural "committees on Rules of the two branches" is now recognized as a
+  referral at all. Bill histories are re-extracted (extractor version 9).
+
 ## [2.1.0] - 2026-11-23
 
 ### Added

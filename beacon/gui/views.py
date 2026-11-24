@@ -122,6 +122,7 @@ def _owed_nothing_view(item: NoRequirements) -> dict[str, Any]:
         "referred_on": item.referred_on.isoformat(),
         "reason": item.reason.value,
         "awaiting": list(item.awaiting),
+        "carried_by": item.carried_by,
     }
 
 
@@ -228,7 +229,14 @@ def bill_detail(
         for o in store.observations.of_kind(ObservationKind.HEARING)
         if o.committee_id == committee_id
     ]
-    facts = project(bill, observations, hearings)
+    facts = project(
+        bill,
+        observations,
+        hearings,
+        vehicle_history=lambda b: store.observations.for_bill(
+            settings.session, b, ObservationKind.BILL_HISTORY
+        ),
+    )
     latest, owed_nothing = _latest_run(store, settings, committee_id)
     evaluations = [e for e in latest if e.bill.bill_id == bill.bill_id]
     tenures = [

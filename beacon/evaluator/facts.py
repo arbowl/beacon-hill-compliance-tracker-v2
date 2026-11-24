@@ -1,6 +1,7 @@
 """Projects observations into rule-free facts about a bill."""
 
-from collections.abc import Iterable
+import re
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from uuid import UUID
@@ -180,6 +181,35 @@ class Origin:
 
 
 @dataclass(frozen=True)
+class Held:
+    """A committee that held a vehicle during a ride, from the day the rider came
+    before it: the later of boarding and the vehicle's referral there."""
+
+    committee_id: str
+    from_on: date
+
+
+@dataclass(frozen=True)
+class Ride:
+    """The bill accompanying another, the vehicle, from accompanied_on until its
+    own next referral (released_on, None while it rides), and the committees that
+    held the vehicle meanwhile. A committee lists the riders with the vehicle."""
+
+    vehicle: str
+    accompanied_on: date
+    released_on: date | None
+    held: tuple[Held, ...]
+    evidence: EvidenceRef
+
+    @property
+    def committee_ids(self) -> tuple[str, ...]:
+        return tuple(h.committee_id for h in self.held)
+
+    def held_by(self, committee_id: str) -> Held | None:
+        return next((h for h in self.held if h.committee_id == committee_id), None)
+
+
+@dataclass(frozen=True)
 class DocumentEvidence:
     """What searches show about one kind of document for one committee.
 
@@ -210,6 +240,7 @@ class BillFacts:
     source_observations: tuple[UUID, ...]
     origin: Origin | None = None
     documents: tuple[DocumentEvidence, ...] = ()
+    rides: tuple[Ride, ...] = ()
 
     def document(
         self, document_kind: DocumentKind, committee_id: str | None
@@ -227,6 +258,10 @@ class BillFacts:
     def tenures_for(self, committee_id: str) -> tuple[Tenure, ...]:
         """Tenures before one committee, in order."""
         return tuple(t for t in self.tenures if t.committee_id == committee_id)
+
+    def carried_before(self, committee_id: str) -> Ride | None:
+        """The first ride on a vehicle that the committee held, if any."""
+        return next((r for r in self.rides if committee_id in r.committee_ids), None)
 
 
 @dataclass
@@ -292,13 +327,32 @@ def _open_on(builders: list[_TenureBuilder], on: date) -> _TenureBuilder | None:
     return None
 
 
+def _without_repeats(rows: Iterable[HistoryRow]) -> list[HistoryRow]:
+    """Drop a table row that repeats the one before it action for action.
+
+    Histories sometimes list one entry twice; replayed, a repeated "reported and
+    referred" would report out of the committee the first copy referred to.
+    """
+    groups: dict[int, list[HistoryRow]] = {}
+    for r in rows:
+        groups.setdefault(r.row_index, []).append(r)
+    kept: list[HistoryRow] = []
+    previous: list[dict] | None = None
+    for _, group in sorted(groups.items()):
+        actions = [r.model_dump(exclude={"row_index"}) for r in group]
+        if actions != previous:
+            kept.extend(group)
+        previous = actions
+    return kept
+
+
 def _ordered_rows(obs: Observation) -> list[HistoryRow]:
     """Rows by date and table order; within a row, terminal actions, then
     referrals, then the rest, so "ordered to a third reading, read third" opens
-    the tenure the reading closes."""
+    the tenure the reading closes. A row repeating the one before it is dropped."""
     assert isinstance(obs.payload, BillHistoryPayload)
     return sorted(
-        obs.payload.rows,
+        _without_repeats(obs.payload.rows),
         key=lambda r: (
             r.action_date,
             r.row_index,
@@ -325,6 +379,78 @@ def _origin(obs: Observation, rows: list[HistoryRow]) -> Origin | None:
         evidence=EvidenceRef(
             observation_id=obs.observation_id, row_index=first.row_index
         ),
+    )
+
+
+_VEHICLE_SIDE = re.compile(r"\baccompanied\s+by\b", re.I)
+
+
+def _boarded(rows: list[HistoryRow]) -> list[tuple[int, HistoryRow, str]]:
+    """Each (position, row, vehicle) where the bill accompanied another.
+
+    "Accompanied by X" is the vehicle's side and names its riders; "Accompanied
+    X" and "Accompanied a study order, see X" are the rider's.
+    """
+    return [
+        (i, r, vehicle)
+        for i, r in enumerate(rows)
+        if r.action_type == ActionType.ACCOMPANIED
+        and not _VEHICLE_SIDE.search(r.raw_text)
+        for vehicle in r.related_bills
+    ]
+
+
+def _rides(
+    bill: BillKey,
+    obs: Observation,
+    rows: list[HistoryRow],
+    vehicle_history: Callable[[str], Iterable[Observation]],
+    cutoff: date | None,
+) -> tuple[tuple[Ride, ...], list[UUID]]:
+    """The bill's rides, with the vehicle observations they rest on."""
+    rides, used = [], []
+    for i, boarded, vehicle in _boarded(rows):
+        released_on = next(
+            (
+                r.action_date
+                for r in rows[i + 1 :]
+                if r.action_type in REFERRAL_ACTIONS and r.committee_id
+            ),
+            None,
+        )
+        current = _current_history(vehicle_history(vehicle))
+        held: dict[str, Held] = {}
+        if current is not None:
+            vehicle_rows = [
+                r
+                for r in _ordered_rows(current)
+                if cutoff is None or r.action_date <= cutoff
+            ]
+            key = BillKey(bill.session, vehicle)
+            for t in _tenures(key, current, vehicle_rows):
+                if (released_on is None or t.referred_on <= released_on) and (
+                    _end(t) is None or boarded.action_date <= _end(t)
+                ):
+                    from_on = max(t.referred_on, boarded.action_date)
+                    held.setdefault(t.committee_id, Held(t.committee_id, from_on))
+            used.append(current.observation_id)
+        rides.append(
+            Ride(
+                vehicle=vehicle,
+                accompanied_on=boarded.action_date,
+                released_on=released_on,
+                held=tuple(held.values()),
+                evidence=EvidenceRef(
+                    observation_id=obs.observation_id, row_index=boarded.row_index
+                ),
+            )
+        )
+    return tuple(rides), used
+
+
+def _end(tenure: Tenure) -> date | None:
+    return (tenure.report.reported_on if tenure.report else None) or (
+        tenure.discharged_on
     )
 
 
@@ -560,13 +686,16 @@ def project(
     observations: Iterable[Observation],
     hearings: Iterable[Observation] = (),
     as_of: datetime | None = None,
+    vehicle_history: Callable[[str], Iterable[Observation]] | None = None,
 ) -> BillFacts:
     """Derive facts from a bill's observations and its committees' hearings.
 
     With as_of, only what had happened by then counts: history rows dated
     later are dropped, and document and hearing observations made later are
     ignored. History still comes from the latest capture, since each row
-    carries its own event date.
+    carries its own event date. With vehicle_history, which gives a bill's
+    observations by bill id, each bill this one accompanied is read for the
+    committees that held it during the ride; without it, rides name none.
     """
     observations = list(observations)
     hearings = list(hearings)
@@ -584,8 +713,8 @@ def project(
     if current is None:
         return BillFacts(bill, (), None, (), documents=documents)
     rows = _ordered_rows(current)
-    if as_of is not None:
-        cutoff = local_date(as_of)
+    cutoff = local_date(as_of) if as_of is not None else None
+    if cutoff is not None:
         rows = [r for r in rows if r.action_date <= cutoff]
     latest = _latest_hearings(hearings)
     sources = [current.observation_id]
@@ -598,6 +727,10 @@ def project(
         sources.extend(used)
         moved.update(adopted)
     tenures = [_release(t, moved) for t in supplemented]
+    rides, carried_by = _rides(
+        bill, current, rows, vehicle_history or (lambda _: ()), cutoff
+    )
+    sources.extend(carried_by)
     return BillFacts(
         bill=bill,
         tenures=tuple(tenures),
@@ -605,4 +738,5 @@ def project(
         source_observations=tuple(sources),
         origin=_origin(current, rows),
         documents=documents,
+        rides=rides,
     )

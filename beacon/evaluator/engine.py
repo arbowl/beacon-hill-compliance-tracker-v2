@@ -78,12 +78,16 @@ def evaluate(
 ) -> list[TenureEvaluation]:
     """Evaluate every tenure of a bill before one committee.
 
-    Deterministic for identical inputs. A committee-originated document with no
-    tenure yields nothing. Any other bill with no observed tenure before the
+    Deterministic for identical inputs. With no tenure, a committee-originated
+    document yields nothing, and so does a bill that came before the committee
+    only by accompanying a bill it held, which is judged in its stead (see
+    no_requirements). Any other bill with no observed tenure before the
     committee yields one Provisional evaluation with reason MISSING_DATA.
     """
     tenures = facts.tenures_for(committee_id)
-    if not tenures and facts.origin is not None:
+    if not tenures and (
+        facts.origin is not None or facts.carried_before(committee_id) is not None
+    ):
         return []
     if not tenures:
         tenure_id = f"{facts.bill}:{committee_id}:unobserved"
@@ -138,7 +142,27 @@ def no_requirements(
     run_id: UUID,
 ) -> list[NoRequirements]:
     """The tenures before one committee that evaluate() passes over: no
-    requirement arose. Each names the requirements still awaited, if any."""
+    requirement arose. Each names the requirements still awaited, if any. A bill
+    with no tenure that a vehicle carried before the committee yields one item
+    naming the vehicle."""
+    if not facts.tenures_for(committee_id) and facts.origin is None:
+        ride = facts.carried_before(committee_id)
+        held = ride.held_by(committee_id) if ride else None
+        if ride is None or held is None:
+            return []
+        return [
+            NoRequirements(
+                run_id=run_id,
+                bill=facts.bill,
+                committee_id=committee_id,
+                tenure_id=f"{facts.bill}:{committee_id}:{held.from_on.isoformat()}",
+                referred_on=held.from_on,
+                ruleset_id=ruleset.ruleset_id,
+                ruleset_version=ruleset.version,
+                as_of=as_of,
+                carried_by=ride.vehicle,
+            )
+        ]
     found = []
     for tenure in facts.tenures_for(committee_id):
         if any(r.obligations(facts, tenure) for r in ruleset.requirements):

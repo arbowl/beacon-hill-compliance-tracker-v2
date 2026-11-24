@@ -46,6 +46,7 @@ REASON_TEXT = {
 NO_REQUIREMENTS_TEXT = {
     NoRequirementsReason.NONE_APPLY: "No tracked rule applies to this referral.",
     NoRequirementsReason.NONE_YET: "Nothing is owed yet.",
+    NoRequirementsReason.ACCOMPANIED: "It came before the committee only as part of",
 }
 _STATIC = files("beacon.reporters.static")
 _LABEL_ORDER = {
@@ -209,12 +210,17 @@ class AuditReporter:
         title = bill.title if bill else None
         bill_id = item.bill.bill_id
         text = NO_REQUIREMENTS_TEXT[item.reason]
+        if item.carried_by is not None:
+            came = f"Came before the committee {_long(item.referred_on)}"
+            text = f"{text} {_bill_label(item.carried_by)}, which is checked instead."
+        else:
+            came = f"Referred {_long(item.referred_on)}"
         if item.awaiting:
             names = ", ".join(REQUIREMENT_NAMES.get(a, a) for a in item.awaiting)
             text += f" Owed once the committee acts: {names}."
         return (
             f"<li><strong>{escape(_bill_label(bill_id))}</strong>: "
-            f"{escape(title or '')}. Referred {escape(_long(item.referred_on))}. "
+            f"{escape(title or '')}. {escape(came)}. "
             f"{escape(text)}</li>"
         )
 
