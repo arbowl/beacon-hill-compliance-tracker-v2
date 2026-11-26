@@ -363,8 +363,9 @@ def _without_repeats(rows: Iterable[HistoryRow]) -> list[HistoryRow]:
 
 def _ordered_rows(obs: Observation) -> list[HistoryRow]:
     """Rows by date and table order; within a row, terminal actions, then
-    referrals, then the rest, so "ordered to a third reading, read third" opens
-    the tenure the reading closes. A row repeating the one before it is dropped."""
+    referrals, then the rest. That way "ordered to a third reading, read third"
+    opens the tenure the reading closes. A row repeating the one before it is
+    dropped."""
     assert isinstance(obs.payload, BillHistoryPayload)
     return sorted(
         _without_repeats(obs.payload.rows),
@@ -530,8 +531,8 @@ def _supply_referrals(
 ) -> tuple[list[HistoryRow], list[SuppliedReferral]]:
     """Insert each referral the history omits just before its anchor row.
 
-    The supplied row is dated referred_on but placed after every row of that day,
-    so nothing else the bill did that day closes it; it shares the anchor's
+    The supplied row is dated referred_on but placed after every row of that day;
+    nothing else the bill did that day can close it, and it shares the anchor's
     row_index, which is the evidence cited for it. A gap whose committee the
     history already refers the bill to, or whose anchor row is missing, is stale.
     """
@@ -715,7 +716,7 @@ def _strays(tenures: Iterable[Tenure]) -> dict[date, HearingNotice]:
     """Announcements for hearings set after their tenure ended, by hearing date.
 
     A committee taking over a bill can announce a hearing before the referral
-    order is entered, so the row lands in the previous committee's tenure.
+    order is entered, which puts the row in the previous committee's tenure.
     """
     strays: dict[date, HearingNotice] = {}
     for tenure in tenures:

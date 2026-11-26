@@ -145,6 +145,17 @@ def test_push_uploads_then_publishes_and_repeat_is_noop(ctx: Context):  # noqa: 
     assert site.calls == [("POST", INGEST_PATH)]
 
 
+def test_manifest_scope_ignores_bundle_order(ctx: Context):  # noqa: F811
+    bundle = load_bundle(_bundle_path(ctx))
+    other = bundle.model_copy(
+        update={"committee": bundle.committee.model_copy(update={"committee_id": "H33"})}
+    )
+    forward = manifest([bundle, other], "t", AS_OF)
+    backward = manifest([other, bundle], "t", AS_OF)
+    assert forward.push_id == backward.push_id
+    assert forward.committees == backward.committees == ("H33", "J19")
+
+
 def test_push_reports_site_errors(ctx: Context):  # noqa: F811
     path = _bundle_path(ctx)
     error = {

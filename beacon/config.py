@@ -12,7 +12,7 @@ _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 def _check_site_url(url: str) -> str:
-    """The site's base URL; plain http only to this machine, so keys are not exposed."""
+    """The site's base URL; plain http only to this machine, to keep keys private."""
     parts = urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.hostname:
         raise ValueError("Site URL must look like https://host[:port]")

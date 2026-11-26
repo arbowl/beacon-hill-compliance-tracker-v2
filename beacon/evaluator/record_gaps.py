@@ -16,7 +16,7 @@ from datetime import date
 class SuppliedReferral:
     """A referral the history omits, though the committee demonstrably held the
     bill. It is supplied on referred_on, just before the row (anchor_on, starting
-    anchor_prefix) that records the committee's report, so the tenure ends there."""
+    anchor_prefix) that records the committee's report, where the tenure ends."""
 
     session: int
     bill_id: str

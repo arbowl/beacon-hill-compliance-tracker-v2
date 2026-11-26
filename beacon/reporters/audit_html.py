@@ -49,7 +49,7 @@ NO_REQUIREMENTS_TEXT = {
     NoRequirementsReason.ACCOMPANIED: "It came before the committee only as part of",
     NoRequirementsReason.RECORD_INCOMPLETE: (
         "The legislative record does not show how this bill came before the "
-        "committee, so it is not judged."
+        "committee. It is not judged."
     ),
 }
 _STATIC = files("beacon.reporters.static")

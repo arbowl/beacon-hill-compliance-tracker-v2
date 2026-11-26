@@ -53,7 +53,7 @@ def load_bundle(path: Path) -> v1.CommitteeBundle:
 
 
 def push_id(bundles: Sequence[v1.CommitteeBundle]) -> UUID:
-    """Stable per set of evaluation runs, so pushing the same data twice is one push."""
+    """Stable per set of evaluation runs: pushing the same data twice is one push."""
     parts = sorted(f"{b.committee.committee_id}:{b.evaluation_run_id}" for b in bundles)
     return uuid5(_PUSH_NAMESPACE, "|".join(parts))
 
@@ -61,7 +61,10 @@ def push_id(bundles: Sequence[v1.CommitteeBundle]) -> UUID:
 def manifest(
     bundles: Sequence[v1.CommitteeBundle], code_version: str, created_at: datetime
 ) -> v1.RunManifest:
-    """The manifest that opens a push of these bundles."""
+    """The manifest that opens a push of these bundles.
+
+    Committees are sorted, as push_id is, and the same runs always open the same scope.
+    """
     sessions = {b.session for b in bundles}
     if len(sessions) != 1:
         raise PushError(f"Bundles span sessions {sorted(sessions)}")
@@ -71,7 +74,7 @@ def manifest(
         session=sessions.pop(),
         code_version=code_version,
         created_at=created_at,
-        committees=tuple(b.committee.committee_id for b in bundles),
+        committees=tuple(sorted(b.committee.committee_id for b in bundles)),
     )
 
 

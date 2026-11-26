@@ -124,7 +124,7 @@ class NoRequirementsReason(StrEnum):
     study order or new draft) that the committee held; that bill is judged."""
     RECORD_INCOMPLETE = "record_incomplete"
     """The legislative record does not show how the bill came before the committee
-    (a reviewed gap; see record_gaps), so nothing about the tenure can be judged."""
+    (a reviewed gap; see record_gaps). Nothing about the tenure can be judged."""
 
 
 class NoRequirements(BaseModel):

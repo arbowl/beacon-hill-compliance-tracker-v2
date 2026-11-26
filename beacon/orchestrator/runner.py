@@ -153,7 +153,7 @@ def _scope(ctx: Context, request: RunRequest) -> tuple[str, ...]:
 def execute(ctx: Context, request: RunRequest) -> list[Path]:
     """Run the request committee by committee; returns report files written.
 
-    Re-extraction spans all stored data, so it runs once, first. "all" means
+    Re-extraction spans all stored data and runs once, first. "all" means
     every committee the site lists, refreshed when collecting; "joint", "house"
     and "senate" mean only that chamber's committees among them.
     """

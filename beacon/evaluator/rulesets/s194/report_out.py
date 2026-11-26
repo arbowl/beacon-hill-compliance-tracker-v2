@@ -233,7 +233,7 @@ class ReportOutDeadline:
             DerivationStep(
                 description=(
                     "Filed in the Senate: no Senate rule sets a joint committee "
-                    "deadline, so the Joint Rule 10 default applies"
+                    "deadline; the Joint Rule 10 default applies"
                 ),
                 clause=JR10_P2,
             ),

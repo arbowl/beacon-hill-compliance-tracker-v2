@@ -32,7 +32,7 @@ class CommitteeAlias:
         chamber: Chamber type (House, Senate, or Joint)
         short_names: List of name variations for matching
         misspellings: Clerk's misspellings seen in histories; matched exactly,
-            never as substrings, so a typo cannot widen what a name matches
+            never as substrings, to keep a typo from widening what a name matches
     """
 
     id: str
@@ -538,8 +538,8 @@ COMMITTEE_REGISTRY: dict[str, CommitteeAlias] = {c.id: c for c in _COMMITTEES}
 def normalize_committee_name(raw_name: str, on: date | None = None) -> str | None:
     """Normalize a committee name to its committee ID.
 
-    With a date, committees retired before it are skipped, so a name shared by
-    a retired committee and its successor resolves by when it was used.
+    With a date, committees retired before it are skipped. A name shared by a
+    retired committee and its successor then resolves by when it was used.
 
     Args:
         raw_name: Raw committee name from action text
@@ -566,8 +566,8 @@ def normalize_committee_name(raw_name: str, on: date | None = None) -> str | Non
     # Second pass: substring matches. The alias found earliest wins, since a
     # trailing clause may name another committee ("House Ways and Means, with the
     # amendment ... by the committee on Health Care Financing pending"); among
-    # those starting together the longest wins, so "Rules of the two branches"
-    # beats the "Rules" inside it.
+    # those starting together the longest wins (e.g. "Rules of the two branches"
+    # beats the "Rules" inside it).
     best: tuple[int, int, str] | None = None
     for committee in active:
         for variant in committee.short_names:

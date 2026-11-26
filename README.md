@@ -6,7 +6,7 @@ bill: reporting by the deadline (JR 10, HR 27), announcing hearings in advance
 committee votes (JR 1D, HR 17B). Every verdict cites the rule text it was judged
 against. Data comes from the public site, malegislature.gov.
 
-Each stage is independent and talks only to a local store, so rules can be re-run
+Each stage is independent and talks only to a local store so that rules can be re-run
 over old data and parser fixes can be applied to pages already captured.
 
 ## Pipeline
@@ -140,12 +140,12 @@ uv run beacon spotcheck summary
 ```
 
 `sample` draws from each committee's latest evaluation run, rotating across labels and
-then across distinct paths through the ruleset, so rare outcomes come up as often as
+then across distinct paths through the ruleset, to ensure rare outcomes come up as often as
 common ones. Each tenure is replayed with current code. For each one it writes a blind
 dossier (raw history rows, hearings, document searches) and a separate key (classified
 rows, the projected tenure, the evaluation with its derivation, and any difference from
 the stored result). Tenures already in the ledger with the same input fingerprint are
-skipped, so a ruleset or extractor change makes them eligible again.
+skipped; a ruleset or extractor change makes them eligible again.
 
 `record` checks the auditor's `verdicts.json` against the sample's manifest and
 appends to `audits/ledger.jsonl`. The `spotcheck` skill in `.claude/skills/` describes
@@ -155,7 +155,7 @@ the audit procedure.
 
 [CHANGELOG.md](CHANGELOG.md) follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the version follows [SemVer](https://semver.org/spec/v2.0.0.html). The site shows the
-changelog to the public at `/changes`, so write entries in plain language, in the Tracker's
+changelog to the public at `/changes`. Write entries in plain language, in the Tracker's
 voice (detections, not judgments), and keep developer detail in commit messages.
 
 | Bump | When |

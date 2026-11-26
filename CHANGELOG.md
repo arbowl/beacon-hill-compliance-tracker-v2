@@ -71,12 +71,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   committee on Bills in the Third Reading (House Rule 22, Senate Rule 33), until it is
   read third or the committee's report is accepted. Previously only an explicit
   "Referred to the committee on Bills in the Third Reading" counted, which the
-  histories rarely record, so most bills listed by those committees were judged
+  histories rarely record; most bills listed by those committees were judged
   Provisional with no referral found.
 - A committee vote posted on the bill that reported another in part, as with
   "Reported, in part, by H4000" or "Reported on a part of H4931", now counts for the
   bill reported. Previously only the bill's own Committee Vote tab and bills it
-  accompanied were searched, so these bills were judged to have no posted vote.
+  accompanied were searched; these bills were judged to have no posted vote.
 - A bill recommitted to a committee that had already reported on it is now tracked as a
   new referral to that committee. Previously the recommittal was not recognized.
 - A hearing announced again for the same date, as the Legislature's site does when it
@@ -98,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Committees that hold no hearings, such as the House Committee on Rules, can now have
   their vote records judged. Previously their empty hearings list was not recorded,
-  so the search for a vote record never counted as complete. Bills those committees
+  and the search for a vote record never counted as complete. Bills those committees
   reported stayed Provisional indefinitely, even when no vote record was ever posted.
   Such bills may now move from "Provisional" to "Non-Compliant" under House Rule 17B.
 - A bill history entry that lists extra procedural steps before the final referral, such
@@ -106,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the committee on ...", is now read as a referral to that last committee.
 - A bill history entry reading "Reported date extended to ..." is now read as a
   reporting deadline extension. Previously it was read as the committee reporting
-  the bill, so the extension date was taken as the report date. Affected bills may
+  the bill; the extension date was taken as the report date. Affected bills may
   move from "Non-Compliant" to "Provisional" or "Compliant".
 - A bill history entry reading "Reporting date extended until ..." is now read as a
   reporting deadline extension. Previously it was not recognized, and the bill was

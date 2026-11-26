@@ -1,7 +1,7 @@
 """Field extraction utilities for parsing action text.
 
-Right now, they all have the same call signature, so some arguments aren't
-used. Not sure if I'll stick with that decision, but that's the rationale.
+Right now, they all have the same call signature, which leaves some arguments
+unused. Not sure if I'll stick with that decision, but that's the rationale.
 """
 
 import re

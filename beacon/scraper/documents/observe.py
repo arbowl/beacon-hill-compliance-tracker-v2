@@ -189,7 +189,7 @@ class _Found:
     @property
     def public_from(self) -> tuple[datetime, PublicBasis] | None:
         """The site's posting date wins over file creation: it is when the public
-        could see this copy. The site gives no time, so the day's start counts."""
+        could see this copy. The site gives no time; the day's start counts."""
         if self.posted_on is not None:
             start = datetime.combine(self.posted_on, time.min, LEGISLATURE_TZ)
             return start, PublicBasis.SITE_POSTED
@@ -340,7 +340,7 @@ def _committee_tab(
 def _document(kind: DocumentKind, found: list[_Found]) -> DocumentPayload:
     """Combine candidates; a date counts only if every candidate has one.
 
-    The document was public once any copy was, so the earliest copy's date wins.
+    The document was public once any copy was; the earliest copy's date wins.
     """
     created = [f.created_at for f in found]
     known = [c for c in created if c is not None]
